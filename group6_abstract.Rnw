@@ -1,0 +1,21 @@
+\documentclass{article}
+
+%\usepackage[margin=1in]{geometry}   % set up margins
+\usepackage[vmargin=1in,hmargin=1in]{geometry}
+\usepackage{tikz}
+\usepackage{booktabs}
+
+\usepackage[backend=bibtex]{biblatex}
+
+\begin{document}
+
+\title {An Analysis of H-1B and PERM Visa Workers in the United States}
+\author{Arunkumar Ranganathan\\ Brian Detweiler\\ Jacques Anthony}
+
+\maketitle
+
+\begin{abstract}
+  H-1B and PERM visa workers make up $x$\%\footnote{Need to find this statistic.} of the United States workforce. Yet little has been published in the way of research.\footnote{True? Need to verify.} Where are these workers, and what do the demographics look like? How does each company's compensation measure up? In this paper, we look at data from the Department of Labor to find answers. As a result of our research, we have made the data public in a Shiny app.
+\end{abstract}
+
+\end{document}
