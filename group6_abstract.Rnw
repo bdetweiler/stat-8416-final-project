@@ -16,8 +16,13 @@
 
 \begin{abstract}
 
-Foreign born American workers make up 17\% \footnote {http://www.migrationpolicy.org/article/frequently-requested-statistics-immigrants-and-immigration-united-states} of the United States workforce. In 2014 nearly 1M foreign nationals became lawful permanent residents in the US, of those 1M, 140,000 visas are allocated to employment based visa category. Yet little has been published in the way of research. Where are these workers, and what do the demographics look like?
-How does each company's compensation measure up? In this paper, we look at data from the Department of Labor to find answers. Department of Labor has made data available from 2003 with a revised template from 2008. Armed with the power of publicly available data, students who are entering the workforce as well as US citizens and permanent residents can competitively position themselves in a career of their interest.  Our aim is use statistics analysis, business analytics to show this information at a granular level in different format that would help make interested parties make informed decision. Our goal is to create this project for audience at multiple data skill levels. As a result of our research, we have made the data public in a Shiny app. 
+Foreign born workers make up 17\% of the United States workforce. In 2014, nearly one million foreign nationals became lawful permanent residents in the United States. Of those one million, 140,000 came through visas which are allocated to employment based residency. Where are these workers, and what do the demographics look like? How does each company's compensation measure up? Here, we use statistical analysis and business analytics on data from the Department of Labor dating back to 2008. By making this publicly available information more accessible and interactive, we empower students who are entering the workforce, as well as US citizens and permanent residents, allowing them to competitively position themselves in the job market by making more informed decisions.
+
+% Not sure if we need to cite sources in the abstract, but here they are if we need them:
+% 17% of workforce: 
+% http://www.migrationpolicy.org/article/frequently-requested-statistics-immigrants-and-immigration-united-states
+% 140,000 visas:
+% https://www.fas.org/sgp/crs/homesec/R42048.pdf
 
 \end{abstract}
 
