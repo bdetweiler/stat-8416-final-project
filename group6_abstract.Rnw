@@ -15,7 +15,10 @@
 \maketitle
 
 \begin{abstract}
-  H-1B and PERM visa workers make up $x$\%\footnote{Need to find this statistic.} of the United States workforce. Yet little has been published in the way of research.\footnote{True? Need to verify.} Where are these workers, and what do the demographics look like? How does each company's compensation measure up? In this paper, we look at data from the Department of Labor to find answers. As a result of our research, we have made the data public in a Shiny app.
+
+Foreign born American workers make up 17\% \footnote {http://www.migrationpolicy.org/article/frequently-requested-statistics-immigrants-and-immigration-united-states} of the United States workforce. In 2014 nearly 1M foreign nationals became lawful permanent residents in the US, of those 1M, 140,000 visas are allocated to employment based visa category. Yet little has been published in the way of research. Where are these workers, and what do the demographics look like?
+How does each company's compensation measure up? In this paper, we look at data from the Department of Labor to find answers. Department of Labor has made data available from 2003 with a revised template from 2008. Armed with the power of publicly available data, students who are entering the workforce as well as US citizens and permanent residents can competitively position themselves in a career of their interest.  Our aim is use statistics analysis, business analytics to show this information at a granular level in different format that would help make interested parties make informed decision. Our goal is to create this project for audience at multiple data skill levels. As a result of our research, we have made the data public in a Shiny app. 
+
 \end{abstract}
 
 \end{document}
