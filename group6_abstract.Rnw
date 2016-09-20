@@ -23,7 +23,7 @@ Foreign born workers make up 17\% of the United States workforce. In 2014, nearl
 % http://www.migrationpolicy.org/article/frequently-requested-statistics-immigrants-and-immigration-united-states
 % 140,000 visas:
 % https://www.fas.org/sgp/crs/homesec/R42048.pdf
-
+Even though this set of data provides insightful information about the population of foreign workers in America, we lack information about non US citizens that legally married US citizens and thus not needing a visa for work.to apply for 
 \end{abstract}
 
 \end{document}
