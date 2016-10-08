@@ -726,7 +726,14 @@ visas$visa_class[which(visas$visa_class == 'Select Visa Classification')] <- NA
 visas$wage_rate <- as.numeric(visas$wage_rate)
 visas$prevailing_wage <- as.numeric(visas$prevailing_wage)
 unique(visas$prevailing_wage_unit)
-which(visas$prevailing_wage_unit == 'hr')
+visas$prevailing_wage[which(visas$prevailing_wage < 502500)]
+visas$prevailing_wage[which(!is.na(visas$prevailing_wage))]
 
 
-unique(visas$agent_attorney_first_name)
+# Quick and dirty analysis
+wage <- select(visas, prevailing_wage) %>% 
+  filter(!is.na(prevailing_wage)) %>%
+  filter(prevailing_wage > 1000) %>%
+  filter(prevailing_wage < 500000)
+
+hist(wage$prevailing_wage, xlim=c(0, 300000), breaks=500)
