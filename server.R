@@ -1,3 +1,4 @@
+library(shiny)
 library(dplyr)
 
 shinyServer(function(input, output, session) {
@@ -24,16 +25,19 @@ shinyServer(function(input, output, session) {
       arrange(Region)
   })
   
-  output$chart <- reactive({
+  output$chart <- renderPlot(
+    hist(rnorm(1000, 0, 1))
+  )
+    #reactive({
     # Return the data and options
-    list(
-      data = googleDataTable(yearData()),
-      options = list(
-        title = sprintf(
-          "Health expenditure vs. life expectancy, %s",
-          input$year),
-        series = series
-      )
-    )
-  })
+    #list(
+    #  data = googleDataTable(yearData()),
+    #  options = list(
+    #    title = sprintf(
+    #      "Health expenditure vs. life expectancy, %s",
+    #      input$year),
+    #    series = series
+    #  )
+    #)
+  #})
 })

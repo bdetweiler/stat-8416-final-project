@@ -331,7 +331,7 @@ headers <- c(colnames(fy2011),
              'agent_attorney_state')
 
 # Add the year as a column
-fy2011$fy <- rep(2010, dim(fy2011)[1])
+fy2011$fy <- rep(2011, dim(fy2011)[1])
 
 # Add the filename as a column
 fy2011$file_name <- rep(file_name, dim(fy2011)[1])
@@ -358,7 +358,7 @@ fy2011$employer_zip_code <- as.character(fy2011$employer_zip_code)
 fy2011$worksite_zip_code <- as.character(fy2011$worksite_zip_code)
 
 # FY 2011  column goes by "FULL_TIME_POS" so we need to negate
-fy2011$part_time <- fy2011iCert$part_time == "N"
+fy2011$part_time <- fy2011$part_time == "N"
 
 
 # DON'T CHANGE
@@ -406,7 +406,7 @@ headers <- c(colnames(fy2012),
              'agent_attorney_state')
 
 # Add the year as a column
-fy2012$fy <- rep(2010, dim(fy2012)[1])
+fy2012$fy <- rep(2012, dim(fy2012)[1])
 
 # Add the filename as a column
 fy2012$file_name <- rep(file_name, dim(fy2012)[1])
@@ -433,7 +433,7 @@ fy2012$employer_zip_code <- as.character(fy2012$employer_zip_code)
 fy2012$worksite_zip_code <- as.character(fy2012$worksite_zip_code)
 
 # FY 2012  column goes by "FULL_TIME_POS" so we need to negate
-fy2012$part_time <- fy2012iCert$part_time == "N"
+fy2012$part_time <- fy2012$part_time == "N"
 
 # DON'T CHANGE
 columnOrder <- unlist(strsplit('fy	file_name	case_number	submitted_date	visa_class	employer_name	employer_address1	employer_address2	employer_city	employer_state	employer_zip_code	worksite_city	worksite_state	worksite_zip_code	total_workers	dol_decision_date	begin_date	end_date	certified_begin_date	certified_end_date	job_title	job_code	status	withdrawn	soc_code	soc_name	occupational_title	wage_rate	wage_rate_from	wage_rate_to	wage_unit	prevailing_wage	prevailing_wage_unit	max_wage	part_time	agent_attorney_first_name	agent_attorney_last_name	agent_attorney_city	agent_attorney_state', split = '\t'))
@@ -480,7 +480,7 @@ headers <- c(colnames(fy2013),
              'agent_attorney_state')
 
 # Add the year as a column
-fy2013$fy <- rep(2010, dim(fy2013)[1])
+fy2013$fy <- rep(2013, dim(fy2013)[1])
 
 # Add the filename as a column
 fy2013$file_name <- rep(file_name, dim(fy2013)[1])
@@ -507,7 +507,7 @@ fy2013$employer_zip_code <- as.character(fy2013$employer_zip_code)
 fy2013$worksite_zip_code <- as.character(fy2013$worksite_zip_code)
 
 # FY 2013  column goes by "FULL_TIME_POS" so we need to negate
-fy2013$part_time <- fy2013iCert$part_time == "N"
+fy2013$part_time <- fy2013$part_time == "N"
 
 # DON'T CHANGE
 columnOrder <- unlist(strsplit('fy	file_name	case_number	submitted_date	visa_class	employer_name	employer_address1	employer_address2	employer_city	employer_state	employer_zip_code	worksite_city	worksite_state	worksite_zip_code	total_workers	dol_decision_date	begin_date	end_date	certified_begin_date	certified_end_date	job_title	job_code	status	withdrawn	soc_code	soc_name	occupational_title	wage_rate	wage_rate_from	wage_rate_to	wage_unit	prevailing_wage	prevailing_wage_unit	max_wage	part_time	agent_attorney_first_name	agent_attorney_last_name	agent_attorney_city	agent_attorney_state', split = '\t'))
@@ -555,7 +555,7 @@ headers <- c(colnames(fy2014),
              'agent_attorney_state')
 
 # Add the year as a column
-fy2014$fy <- rep(2010, dim(fy2014)[1])
+fy2014$fy <- rep(2014, dim(fy2014)[1])
 
 # Add the filename as a column
 fy2014$file_name <- rep(file_name, dim(fy2014)[1])
@@ -582,7 +582,7 @@ fy2014$employer_zip_code <- as.character(fy2014$employer_zip_code)
 fy2014$worksite_zip_code <- as.character(fy2014$worksite_zip_code)
 
 # FY 2014  column goes by "FULL_TIME_POS" so we need to negate
-fy2014$part_time <- fy2014iCert$part_time == "N"
+fy2014$part_time <- fy2014$part_time == "N"
 
 # DON'T CHANGE
 columnOrder <- unlist(strsplit('fy	file_name	case_number	submitted_date	visa_class	employer_name	employer_address1	employer_address2	employer_city	employer_state	employer_zip_code	worksite_city	worksite_state	worksite_zip_code	total_workers	dol_decision_date	begin_date	end_date	certified_begin_date	certified_end_date	job_title	job_code	status	withdrawn	soc_code	soc_name	occupational_title	wage_rate	wage_rate_from	wage_rate_to	wage_unit	prevailing_wage	prevailing_wage_unit	max_wage	part_time	agent_attorney_first_name	agent_attorney_last_name	agent_attorney_city	agent_attorney_state', split = '\t'))
@@ -597,13 +597,13 @@ setcolorder(fy2014, columnOrder)
 ######################################################################################################
 # Copied and pasted from first part of Excel sheet - These are the columns we want to read
 # These are not in the order that will be in the CSV
-colsToRead <- unlist(strsplit('2015	H-1B_Disclosure_Data_FY15_Q4	CASE_NUMBER	CASE_SUBMITTED	VISA_CLASS	EMPLOYER_NAME	EMPLOYER_ADDRESS2	EMPLOYER_ADDRESS1	EMPLOYER_CITY	EMPLOYER_STATE	EMPLOYER_POSTAL_CODE	WORKSITE_CITY	WORKSITE_STATE	WORKSITE_POSTAL_CODE	TOTAL WORKERS	DECISION_DATE	EMPLOYMENT_START_DATE	EMPLOYMENT_END_DATE	NA	NA	JOB_TITLE	NAIC_CODE	CASE_STATUS	NA	SOC_CODE	SOC_NAME	NA	NA	WAGE_RATE_OF_PAY_FROM	WAGE_RATE_OF_PAY_TO	WAGE_UNIT_OF_PAY	PREVAILING_WAGE	PW_UNIT_OF_PAY	NA	FULL_TIME_POSITION	AGENT_ATTORNEY_NAME	AGENT_ATTORNEY_CITY	AGENT_ATTORNEY_STATE', split = '\t'))
+colsToRead <- unlist(strsplit('2015	H-1B_Disclosure_Data_FY15_Q4	CASE_NUMBER	CASE_SUBMITTED	VISA_CLASS	EMPLOYER_NAME	EMPLOYER_ADDRESS1	EMPLOYER_ADDRESS2	EMPLOYER_CITY	EMPLOYER_STATE	EMPLOYER_POSTAL_CODE	WORKSITE_CITY	WORKSITE_STATE	WORKSITE_POSTAL_CODE	TOTAL WORKERS	DECISION_DATE	EMPLOYMENT_START_DATE	EMPLOYMENT_END_DATE	NA	NA	JOB_TITLE	NAIC_CODE	CASE_STATUS	NA	SOC_CODE	SOC_NAME	NA	WAGE_RATE_OF_PAY	NA	NA	WAGE_UNIT_OF_PAY	PREVAILING_WAGE	PW_UNIT_OF_PAY	NA	FULL_TIME_POSITION	AGENT_ATTORNEY_NAME	AGENT_ATTORNEY_CITY	AGENT_ATTORNEY_STATE', split = '\t'))
 colsToRead <- colsToRead[!colsToRead %in% 'NA']
 # Remove the year and filename
 colsToRead <- colsToRead[3:length(colsToRead)]
 
 # Copied and pasted from second part of excel sheet, excluding the NAs
-renameCols <- unlist(strsplit('case_number	status	submitted_date	dol_decision_date	visa_class	begin_date	end_date	employer_name	employer_address1	employer_address2	employer_city	employer_state	agent_attorney_first_name	agent_attorney_city	agent_attorney_state	job_title	soc_code	soc_name	job_code	total_workers	part_time	prevailing_wage	prevailing_wage_unit	wage_rate	wage_unit	worksite_city	worksite_state	worksite_zip_code', split = '\t'))
+renameCols <- unlist(strsplit('case_number	status	submitted_date	dol_decision_date	visa_class	begin_date	end_date	employer_name	employer_address1	employer_address2	employer_city	employer_state	employer_zip_code	agent_attorney_first_name	agent_attorney_city	agent_attorney_state	job_title	soc_code	soc_name	job_code	total_workers	part_time	prevailing_wage	prevailing_wage_unit	wage_rate	wage_unit	worksite_city	worksite_state	worksite_zip_code', split = '\t'))
 file_name <- 'H-1B_2015.csv'
 fy2015 <- fread(file_name, 
                 header = TRUE, 
@@ -618,15 +618,14 @@ headers <- c(colnames(fy2015),
              'file_name',
              'wage_rate_from',
              'wage_rate_to',
-             'max_wage',
              'withdrawn',
              'agent_attorney_last_name',
              'certified_begin_date',
              'certified_end_date',
-             'occupational_title',
-             'employer_zip_code')
+             'max_wage',
+             'occupational_title')
 # Add the year as a column
-fy2015$fy <- rep(2010, dim(fy2015)[1])
+fy2015$fy <- rep(2015, dim(fy2015)[1])
 
 # Add the filename as a column
 fy2015$file_name <- rep(file_name, dim(fy2015)[1])
@@ -649,8 +648,18 @@ fy2015$prevailing_wage <- as.character(fy2015$prevailing_wage)
 fy2015$employer_zip_code <- as.character(fy2015$employer_zip_code)
 fy2015$worksite_zip_code <- as.character(fy2015$worksite_zip_code)
 
+wage_rate_tmp <- gsub("[[:punct:]]00", "", fy2015$wage_rate)
+wage_rate_tmp <- gsub(" ", "", wage_rate_tmp)
+wage_rate_from <- gsub("-.*", "", wage_rate_tmp)
+wage_rate_to <- gsub(".*-", "", wage_rate_tmp)
+wage_rate_to[which(wage_rate_to == '')] <- wage_rate_from[which(wage_rate_to == '')]
+
+fy2015$wage_rate_from <- wage_rate_from
+fy2015$wage_rate_to <- wage_rate_to
+
+
 # FY 2015  column goes by "FULL_TIME_POS" so we need to negate
-fy2015$part_time <- fy2015iCert$part_time == "N"
+fy2015$part_time <- fy2015$part_time == "N"
 
 # DON'T CHANGE
 columnOrder <- unlist(strsplit('fy	file_name	case_number	submitted_date	visa_class	employer_name	employer_address1	employer_address2	employer_city	employer_state	employer_zip_code	worksite_city	worksite_state	worksite_zip_code	total_workers	dol_decision_date	begin_date	end_date	certified_begin_date	certified_end_date	job_title	job_code	status	withdrawn	soc_code	soc_name	occupational_title	wage_rate	wage_rate_from	wage_rate_to	wage_unit	prevailing_wage	prevailing_wage_unit	max_wage	part_time	agent_attorney_first_name	agent_attorney_last_name	agent_attorney_city	agent_attorney_state', split = '\t'))
@@ -664,13 +673,13 @@ setcolorder(fy2015, columnOrder)
 ######################################################################################################
 # Copied and pasted from first part of Excel sheet - These are the columns we want to read
 # These are not in the order that will be in the CSV
-colsToRead <- unlist(strsplit('2016	H-1B_Disclosure_Data_FY16_Q4	CASE_NUMBER	CASE_SUBMITTED	VISA_CLASS	EMPLOYER_NAME	EMPLOYER_ADDRESS	EMPLOYER_CITY	EMPLOYER_STATE	EMPLOYER_POSTAL_CODE	WORKSITE_CITY	WORKSITE_STATE	WORKSITE_POSTAL_CODE	TOTAL WORKERS	DECISION_DATE	EMPLOYMENT_START_DATE	EMPLOYMENT_END_DATE	NA	NA	JOB_TITLE	NAIC_CODE	CASE_STATUS	NA	SOC_CODE	SOC_NAME	NA	NA	WAGE_RATE_OF_PAY_FROM	WAGE_RATE_OF_PAY_TO	WAGE_UNIT_OF_PAY	PREVAILING_WAGE	PW_UNIT_OF_PAY	NA	FULL_TIME_POSITION	AGENT_ATTORNEY_NAME	AGENT_ATTORNEY_CITY	AGENT_ATTORNEY_STATE', split = '\t'))
+colsToRead <- unlist(strsplit('2016	H-1B_Disclosure_Data_FY16	CASE_NUMBER	CASE_SUBMITTED	VISA_CLASS	EMPLOYER_NAME	EMPLOYER_ADDRESS	NA	EMPLOYER_CITY	EMPLOYER_STATE	EMPLOYER_POSTAL_CODE	WORKSITE_CITY	WORKSITE_STATE	WORKSITE_POSTAL_CODE	TOTAL_WORKERS	DECISION_DATE	EMPLOYMENT_START_DATE	EMPLOYMENT_END_DATE	NA	NA	JOB_TITLE	NAIC_CODE	CASE_STATUS	NA	SOC_CODE	SOC_NAME	NA	NA	WAGE_RATE_OF_PAY_FROM	WAGE_RATE_OF_PAY_TO	WAGE_UNIT_OF_PAY	PREVAILING_WAGE	PW_UNIT_OF_PAY	NA	FULL_TIME_POSITION	AGENT_ATTORNEY_NAME	AGENT_ATTORNEY_CITY	AGENT_ATTORNEY_STATE', split = '\t'))
 colsToRead <- colsToRead[!colsToRead %in% 'NA']
 # Remove the year and filename
 colsToRead <- colsToRead[3:length(colsToRead)]
 
 # Copied and pasted from second part of excel sheet, excluding the NAs
-renameCols <- unlist(strsplit('case_number	status	submitted_date	dol_decision_date	visa_class	begin_date	end_date	employer_name	employer_address1	employer_city	employer_state	employer_zip_code	agent_attorney_first_name	agent_attorney_city	agent_attorney_state	job_title	soc_code	soc_name	job_code	total_workers	part_time	prevailing_wage	prevailing_wage_unit	wage_rate	wage_unit	worksite_city	worksite_state	worksite_zip_code', split = '\t'))
+renameCols <- unlist(strsplit('case_number	status	submitted_date	dol_decision_date	visa_class	begin_date	end_date	employer_name	employer_address1	employer_city	employer_state	employer_zip_code	agent_attorney_first_name	agent_attorney_city	agent_attorney_state	job_title	soc_code	soc_name	job_code	total_workers	part_time	prevailing_wage	prevailing_wage_unit	wage_rate_from	wage_rate_to	wage_unit	worksite_city	worksite_state	worksite_zip_code', split = '\t'))
 file_name <- 'H-1B_2016.csv'
 fy2016 <- fread(file_name, 
                 header = TRUE, 
@@ -683,31 +692,29 @@ fy2016 <- fread(file_name,
 headers <- c(colnames(fy2016), 
              'fy', 
              'file_name',
-             'wage_rate_from',
-             'wage_rate_to',
-             'max_wage',
              'withdrawn',
              'agent_attorney_last_name',
              'certified_begin_date',
              'certified_end_date',
+             'max_wage',
              'occupational_title',
-             'employer_address2')
+             'wage_rate',
+             'employer_address_2')
 # Add the year as a column
-fy2016$fy <- rep(2010, dim(fy2016)[1])
+fy2016$fy <- rep(2016, dim(fy2016)[1])
 
 # Add the filename as a column
 fy2016$file_name <- rep(file_name, dim(fy2016)[1])
 
 # Missing columns
-fy2016$wage_rate_from <- rep(NA, dim(fy2016)[1])
-fy2016$wage_rate_to <- rep(NA, dim(fy2016)[1])
-fy2016$max_wage <- rep(NA, dim(fy2016)[1])
 fy2016$withdrawn <- rep(NA, dim(fy2016)[1])
 fy2016$agent_attorney_last_name <- rep(NA, dim(fy2016)[1])
 fy2016$certified_begin_date <- rep(NA, dim(fy2016)[1])
 fy2016$certified_end_date <- rep(NA, dim(fy2016)[1])
+fy2016$max_wage <- rep(NA, dim(fy2016)[1])
 fy2016$occupational_title <- rep(NA, dim(fy2016)[1])
-fy2016$employer_address2 <- rep(NA, dim(fy2016)[1])
+fy2016$wage_rate <- rep(NA, dim(fy2016)[1])
+fy2016$employer_address_2 <- rep(NA, dim(fy2016)[1])
 
 # Name the columns as they appear in the spreadsheet
 colnames(fy2016) <- headers
@@ -717,7 +724,7 @@ fy2016$employer_zip_code <- as.character(fy2016$employer_zip_code)
 fy2016$worksite_zip_code <- as.character(fy2016$worksite_zip_code)
 
 # FY 2016 column goes by "FULL_TIME_POS" so we need to negate
-fy2016$part_time <- fy2016iCert$part_time == "N"
+fy2016$part_time <- fy2016$part_time == "N"
 
 # DON'T CHANGE
 columnOrder <- unlist(strsplit('fy	file_name	case_number	submitted_date	visa_class	employer_name	employer_address1	employer_address2	employer_city	employer_state	employer_zip_code	worksite_city	worksite_state	worksite_zip_code	total_workers	dol_decision_date	begin_date	end_date	certified_begin_date	certified_end_date	job_title	job_code	status	withdrawn	soc_code	soc_name	occupational_title	wage_rate	wage_rate_from	wage_rate_to	wage_unit	prevailing_wage	prevailing_wage_unit	max_wage	part_time	agent_attorney_first_name	agent_attorney_last_name	agent_attorney_city	agent_attorney_state', split = '\t'))
@@ -839,6 +846,11 @@ normalized_prevailing_wage[which(is.na(normalized_prevailing_wage))] <- 0
 normalized_prevailing_wage <- as.numeric(normalized_prevailing_wage)
 
 visas$normalized_prevailing_wage <- normalized_prevailing_wage * visas$prevailing_wage
+
+visas$wage_rate[which(visas$fy == 2015)]
+
+
+
 
 # Save post processing
 saveRDS(visas, 'H1BVisas.rds')
