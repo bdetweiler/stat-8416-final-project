@@ -1,0 +1,65 @@
+\documentclass{article}
+
+%\usepackage[margin=1in]{geometry}   % set up margins
+\usepackage[vmargin=1in,hmargin=1in]{geometry}
+\usepackage{tikz}
+\usepackage{booktabs}
+
+\usepackage[backend=bibtex]{biblatex}
+
+\begin{document}
+
+% Eventually we'll want to break our report into multiple files
+% This is how we can include them
+%<<child-demo, child='Child.Rnw'>>=
+%@
+
+\title {An Analysis of PERM Labor Certification and Labor Condition Applications from the United States Department of Labor}
+\author{Arunkumar Ranganathan\\ Brian Detweiler\\ Jacques Anthony}
+
+\maketitle
+
+\begin{abstract}
+
+Foreign born workers make up 17\% of the United States workforce. In 2014, nearly one million foreign nationals became lawful permanent residents in the United States. Of those one million, 140,000 came through visas which are allocated to employment based residency. Where are these workers, and what do the demographics look like? How does each company's compensation measure up? Here, we use statistical analysis and business analytics to examine visa application data from the U.S. Department of Labor from 2008 to 2016. By making this publicly available information more accessible and interactive, we empower students who are entering the workforce, as well as US citizens and permanent residents, allowing them to competitively position themselves in the job market by making more informed decisions.
+
+% Not sure if we need to cite sources in the abstract, but here they are if we need them:
+% 17% of workforce: 
+% http://www.migrationpolicy.org/article/frequently-requested-statistics-immigrants-and-immigration-united-states
+% 140,000 visas:
+% https://www.fas.org/sgp/crs/homesec/R42048.pdf
+% Even though this set of data provides insightful information about the population of foreign workers in America, we lack information about non US citizens that legally married US citizens and thus not needing a work visa. 
+\end{abstract}
+
+\pagebreak
+
+<<>>=
+visas <- readRDS('H1BVisas.rds')
+perm <- readRDS('PermData.rds')
+perm.map <- readRDS('PermEmpMapsdat.rds')
+
+hist(visas[which(visas$normalized_wage < 250000),]$normalized_wage, breaks=500)
+
+findmode <- function(x, na.rm = TRUE) {
+  
+  if(na.rm){
+    x = x[!is.na(x)]
+  }
+  
+  ux <- unique(x)
+  return(ux[which.max(tabulate(match(x, ux)))])
+}
+
+wage.mode <- findmode(visas$normalized_wage)
+wage.mode
+abline(v=wage.mode + 500, col="red")
+
+hist(visas[which(visas$normalized_prevailing_wage < 250000),]$normalized_prevailing_wage, breaks=500)
+pw.mode <- findmode(visas$normalized_prevailing_wage)
+pw.mode
+abline(v=wage.mode + 500, col="red")
+
+
+@
+
+\end{document}
