@@ -16,6 +16,9 @@ infile <- "input"
 addresses = paste0(data$EMPLOYER_ADDRESS_1, data$EMPLOYER_CITY, data$EMPLOYER_STATE
                    ,data$employer_zip_code," USA", sep=" ")
 
+# special character hash is failing in maps data fetch
+addresses = gsub('#', '', addresses)
+
 
 #define a function that will process googles server responses for us.
 getGeoDetails <- function(address){   
