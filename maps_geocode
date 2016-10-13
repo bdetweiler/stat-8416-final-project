@@ -72,7 +72,15 @@ if (file.exists(tempfilename)){
 for (ii in seq(startindex, length(addresses))){
   print(paste("Working on index", ii, "of", length(addresses)))
   #query the google geocoder - this will pause here if we are over the limit.
-  result = getGeoDetails(addresses[ii]) 
+  
+  if (ii %in% error_indexes) 
+    {
+    result =  data.frame(lat=NA, long=NA, accuracy=NA, formatted_address=NA, address_type=NA, status='Error')
+    } else {
+      result = getGeoDetails(addresses[ii]) 
+    }
+
+  
   print(result$status)     
   result$index <- ii
   #append the answer to the results file.
@@ -81,7 +89,7 @@ for (ii in seq(startindex, length(addresses))){
   saveRDS(geocoded, tempfilename)
 }
 
-geocoded$index = geocoded$index + min_id + 1
+geocoded$index = geocoded$index + min_id - 1
 
 #now we add the latitude and longitude to the main data
 
