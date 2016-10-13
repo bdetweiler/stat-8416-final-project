@@ -4,6 +4,7 @@
 \usepackage[vmargin=1in,hmargin=1in]{geometry}
 \usepackage{tikz}
 \usepackage{booktabs}
+\usepackage{hyperref}
 
 \usepackage[backend=bibtex]{biblatex}
 
@@ -21,7 +22,7 @@
 
 \begin{abstract}
 
-Foreign born workers make up 17\% of the United States workforce. In 2014, nearly one million foreign nationals became lawful permanent residents in the United States. Of those one million, 140,000 came through visas which are allocated to employment based residency. Where are these workers, and what do the demographics look like? How does each company's compensation measure up? Here, we use statistical analysis and business analytics to examine visa application data from the U.S. Department of Labor from 2008 to 2016. By making this publicly available information more accessible and interactive, we empower students who are entering the workforce, as well as US citizens and permanent residents, allowing them to competitively position themselves in the job market by making more informed decisions.
+Foreign born workers make up 17\% of the United States workforce. In 2014, nearly one million foreign nationals became lawful permanent residents in the United States. Of those one million, 140,000 came through visas which are allocated to employment based residency. Where are these workers, and what do the demographics look like? How does each company's compensation measure up? Here, we use statistical analysis and business analytics to examine visa application data from the U.S. Department of Labor from 2008 to 2016. We intend to create an interactive data product that will make this publicly available information more accessible to the students who are entering the workforce, as well as to US citizens and permanent residents. This will empower them to competitively position themselves in the job market by making more informed decisions.
 
 % Not sure if we need to cite sources in the abstract, but here they are if we need them:
 % 17% of workforce: 
@@ -31,35 +32,54 @@ Foreign born workers make up 17\% of the United States workforce. In 2014, nearl
 % Even though this set of data provides insightful information about the population of foreign workers in America, we lack information about non US citizens that legally married US citizens and thus not needing a work visa. 
 \end{abstract}
 
+
+\pagenumbering{arabic} % reset numbering to normal for the main content
+
+% \newpage
+\section{Introduction}
+The U.S. Department of Labor provides data for Labor Condation Applications and PERM Labor Certifications dating back to 2008. This data contains a wealth of job market information including prevailing wage, and the wages offered by particular companies to individuals with particular qualifications. 
+
+
+\subsection{Document reproducibility}
+The entirity of this project is reproducible. 
+
 \pagebreak
 
 <<>>=
-visas <- readRDS('H1BVisas.rds')
-perm <- readRDS('PermData.rds')
-perm.map <- readRDS('PermEmpMapsdat.rds')
+#visas <- readRDS('H1BVisas.rds')
+#perm <- readRDS('PermData.rds')
+#perm.map <- readRDS('PermEmpMapsdat.rds')
 
-hist(visas[which(visas$normalized_wage < 250000),]$normalized_wage, breaks=500)
+#hist(visas[which(visas$normalized_wage < 250000),]$normalized_wage, breaks=500)
 
-findmode <- function(x, na.rm = TRUE) {
+#findmode <- function(x, na.rm = TRUE) {
   
-  if(na.rm){
-    x = x[!is.na(x)]
-  }
+  #if(na.rm){
+    #x = x[!is.na(x)]
+  #}
   
-  ux <- unique(x)
-  return(ux[which.max(tabulate(match(x, ux)))])
-}
+  #ux <- unique(x)
+  #return(ux[which.max(tabulate(match(x, ux)))])
+#}
 
-wage.mode <- findmode(visas$normalized_wage)
-wage.mode
-abline(v=wage.mode + 500, col="red")
+#wage.mode <- findmode(visas$normalized_wage)
+#wage.mode
+#abline(v=wage.mode + 500, col="red")
 
-hist(visas[which(visas$normalized_prevailing_wage < 250000),]$normalized_prevailing_wage, breaks=500)
-pw.mode <- findmode(visas$normalized_prevailing_wage)
-pw.mode
-abline(v=wage.mode + 500, col="red")
+#hist(visas[which(visas$normalized_prevailing_wage < 250000),]$normalized_prevailing_wage, breaks=500)
+#pw.mode <- findmode(visas$normalized_prevailing_wage)
+#pw.mode
+#abline(v=wage.mode + 500, col="red")
 
 
 @
+
+\begin{thebibliography}{9}
+
+\bibitem{DoL}
+  U.S. Department of Labor,
+  Office of Foreign Labor Certification Disclosure Data,
+  \href{https://www.foreignlaborcert.doleta.gov/performancedata.cfm}{https://www.foreignlaborcert.doleta.gov/performancedata.cfm}
+\end{thebibliography}
 
 \end{document}
