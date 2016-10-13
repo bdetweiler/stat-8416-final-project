@@ -4,28 +4,33 @@ library(dplyr)
 library(data.table)
 
 min_id = 1
-max_id = 10000
+max_id = 40000
 mapsdata = readRDS(file="PermEmpMapsdat.rds")
+
+# temapsdata = readRDS(file="input_temp_geocoded - Copy.rds")
 
 data <- mapsdata %>% filter(ID >= min_id & ID <= max_id)
 
+error_indexes<- c(8933)
+
 infile <- "input"
 
-  # get the address list, and append "USA" to the end to increase accuracy 
-  # (change or remove this if your address already include a country etc.)
+# get the address list, and append "USA" to the end to increase accuracy 
+# (change or remove this if your address already include a country etc.)
 addresses = paste0(data$EMPLOYER_ADDRESS_1, data$EMPLOYER_CITY, data$EMPLOYER_STATE
                    ,data$employer_zip_code," USA", sep=" ")
-
 # special character hash is failing in maps data fetch
 addresses = gsub('#', '', addresses)
 
-
 #define a function that will process googles server responses for us.
-getGeoDetails <- function(address){   
+getGeoDetails <- function(address){  
+  
   #use the gecode function to query google servers
+  
   geo_reply = geocode(address, output='all', messaging=TRUE, override_limit=TRUE)
-  #now extract the bits that we need from the returned list
+    #now extract the bits that we need from the returned list
   answer <- data.frame(lat=NA, long=NA, accuracy=NA, formatted_address=NA, address_type=NA, status=NA)
+  
   answer$status <- geo_reply$status
   
   #if we are over the query limit - want to pause for an hour
@@ -34,17 +39,16 @@ getGeoDetails <- function(address){   
     time <- Sys.time()
     print(as.character(time))
     Sys.sleep(60*60)
-    geo_reply = geocode(address, output='all', messaging=TRUE, override_limit=TRUE)
     answer$status <- geo_reply$status
   }
   
   #return Na's if we didn't get a match:
   if (geo_reply$status != "OK"){
     return(answer)
-  }   
+  }   
   #else, extract what we need from the Google server reply into a dataframe:
   answer$lat <- geo_reply$results[[1]]$geometry$location$lat
-  answer$long <- geo_reply$results[[1]]$geometry$location$lng   
+  answer$long <- geo_reply$results[[1]]$geometry$location$lng   
   if (length(geo_reply$results[[1]]$types) > 0){
     answer$accuracy <- geo_reply$results[[1]]$types[[1]]
   }
@@ -71,20 +75,22 @@ if (file.exists(tempfilename)){
 # Start the geocoding process - address by address. geocode() function takes care of query speed limit.
 for (ii in seq(startindex, length(addresses))){
   print(paste("Working on index", ii, "of", length(addresses)))
-  #query the google geocoder - this will pause here if we are over the limit.
+  # if we need to manually exclude geocode indexes we can do it here by adding
+  # indexes to exclude in a vector called error_indexes
   
-  if (ii %in% error_indexes) 
-    {
+  if (ii %in% error_indexes) {
     result =  data.frame(lat=NA, long=NA, accuracy=NA, formatted_address=NA, address_type=NA, status='Error')
-    } else {
-      result = getGeoDetails(addresses[ii]) 
-    }
-
+  } else {
+    print(ii %in% error_indexes)
+    result = getGeoDetails(addresses[ii]) 
+    print(ii %in% error_indexes)
+  }
   
-  print(result$status)     
+  
+  print(result$status)     
   result$index <- ii
   #append the answer to the results file.
-  geocoded <- rbind(geocoded, result)
+  geocoded <- unique(rbind(geocoded, result))
   #save temporary results as we are going along
   saveRDS(geocoded, tempfilename)
 }
@@ -97,7 +103,6 @@ geocoded_ds=left_join(data, geocoded, by = c("ID"="index"))
 
 
 #finally write it all to the output files
-saveRDS(geocoded_ds, paste0(infile ,"_geocoded.rds"))
-# write.table(data, file=paste0("../data/", infile ,"_geocoded.csv"), sep=",", row.names=FALSE)
-
-
+saveRDS(geocoded_ds, paste0( infile ,"_geocoded.rds"))
+write.table(geocoded, file=paste0("geocoded.csv"), sep=",", row.names=FALSE)
+write.table(geocoded_ds, file=paste0("geocoded_ds.csv"), sep=",", row.names=FALSE)
