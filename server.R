@@ -1,43 +1,27 @@
 library(shiny)
 library(dplyr)
 
-shinyServer(function(input, output, session) {
+shinyServer(function(input, output) {
   
-  # Provide explicit colors for regions, so they don't get recoded when the
-  # different series happen to be ordered differently from year to year.
-  # http://andrewgelman.com/2014/09/11/mysterious-shiny-things/
-  defaultColors <- c("#3366cc", "#dc3912", "#ff9900", "#109618", "#990099", "#0099c6", "#dd4477")
-  series <- structure(
-    lapply(defaultColors, function(color) { list(color=color) }),
-    names = levels(data$Region)
-  )
-  
-  yearData <- reactive({
-    # Filter to the desired year, and put the columns
-    # in the order that Google's Bubble Chart expects
-    # them (name, x, y, color, size). Also sort by region
-    # so that Google Charts orders and colors the regions
-    # consistently.
-    df <- data %>%
-      filter(Year == input$year) %>%
-      select(Country, Health.Expenditure, Life.Expectancy,
-             Region, Population) %>%
-      arrange(Region)
+  output$h1b <- renderPlot({
+    hist(visas[which(visas$normalized_wage > input$x_min & visas$normalized_wage < input$x_max), ]$normalized_wage, 
+         breaks=500,
+         main="H1B Wage Distribution",
+         xlab="Wage",
+         freq=F)
+    dens <- density(visas[which(visas$normalized_wage > input$x_min & visas$normalized_wage < input$x_max), ]$normalized_wage,
+                    kernel="optcosine")
+    lines(dens, col="blue")
   })
   
-  output$chart <- renderPlot(
-    hist(rnorm(1000, 0, 1))
-  )
-    #reactive({
-    # Return the data and options
-    #list(
-    #  data = googleDataTable(yearData()),
-    #  options = list(
-    #    title = sprintf(
-    #      "Health expenditure vs. life expectancy, %s",
-    #      input$year),
-    #    series = series
-    #  )
-    #)
-  #})
+  output$perms <- renderPlot({
+    hist(perm[which(perm$normalized_wage > input$x_min & perm$normalized_wage < input$x_max), ]$normalized_wage, 
+         breaks=500,
+         main="PERM Wage Distribution",
+         xlab="Wage",
+         freq=F)
+    dens <- density(perm[which(perm$normalized_wage > input$x_min & perm$normalized_wage < input$x_max), ]$normalized_wage,
+                    kernel="optcosine")
+    lines(dens, col="blue")
+  })
 })

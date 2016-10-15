@@ -23,3 +23,5 @@
 figure
 /*.gz
 /*.xml
+/input_temp_geocoded.rds
+/.RDataTmp

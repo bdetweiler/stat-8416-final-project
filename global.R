@@ -1,2 +1,3 @@
-data <- readRDS("healthexp.Rds")
-data$Region <- as.factor(data$Region)
+visas <- readRDS("H1BVisas.Rds")
+perm <- readRDS("PermData.Rds")
+# data$Region <- as.factor(data$Region)
