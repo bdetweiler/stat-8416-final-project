@@ -5,6 +5,9 @@
 \usepackage{tikz}
 \usepackage{booktabs}
 \usepackage{hyperref}
+\usepackage{titlesec}
+
+\setcounter{secnumdepth}{4}
 
 \usepackage[backend=bibtex]{biblatex}
 
@@ -30,6 +33,9 @@ Foreign born workers make up 17\% of the United States workforce. In 2014, nearl
 % 140,000 visas:
 % https://www.fas.org/sgp/crs/homesec/R42048.pdf
 % Even though this set of data provides insightful information about the population of foreign workers in America, we lack information about non US citizens that legally married US citizens and thus not needing a work visa. 
+
+% Immigration statistics
+%https://www.us-immigration.com/how-many-immigration-applications-filed-each-year/
 \end{abstract}
 
 
@@ -37,12 +43,45 @@ Foreign born workers make up 17\% of the United States workforce. In 2014, nearl
 
 % \newpage
 \section{Introduction}
-The U.S. Department of Labor provides data for Labor Condation Applications and PERM Labor Certifications dating back to 2008. This data contains a wealth of job market information including prevailing wage, and the wages offered by particular companies to individuals with particular qualifications. 
+The U.S. Department of Labor provides data for Labor Condition Applications and PERM Labor Certifications dating back to 2008. This data contains a wealth of job market information including prevailing wage, and the wages offered by particular companies to individuals with particular qualifications. 
 
 
 \subsection{Document reproducibility}
-The entirity of this project is reproducible. 
+The entirety of this project is reproducible. 
 
+\section{About the data}
+The Office of Foreign Labor Certification, under the Department of Labor provides data for PERM Labor Certification (LC) applications and Labor Condition Applications (LCA) via XLSX files. Data is available from 2008 onward. The iCERT system was implemented in 2009, so there are two files for 2009. Each file is structured similar to the others, but there are differences which must be addressed.
+
+\subsection{H-1B Data preparation}
+
+The H-1B data is about 75\% larger than the PERM data, and spreadsheet programs do not handle these well, so the first task was to export these to CSV formatted files so that they could be handled with better tools. When exporting, they were also given more uniform file names. Once in CSV, we needed to identify common columns across all spreadsheets. The difficulty here, is that the columns do not have the same names across spreadsheets, even though they may be holding the same data.
+
+Using the UNIX tool \texttt{head -n 10 *.csv > headers.txt}, we took the first ten rows of each file and put them into a separate file. Each of the CSVs first ten rows were then copied and pasted into another spreadsheet, and we undertook a manual effort to match columns of the same identity. We also discarded some excess information that we deemed to be unnecessary for our purposes. 
+
+It is also important to note that there was not always a match for the columns we had selected. For instance, we found some interesting information regarding the attorney used by the employer to file the H-1B application. This was only introduced in the 2015 and 2016 datasets, however, so prior years would have no data for this.
+
+After determining the standard columns, we wrote an import script in \textsf{R} that made use of the \texttt{data.table::fread} function. This allowed us to not only quickly read in the file, but also select only the columns of interest, and rename them to the standard naming convention upon read. 
+
+Once the data was read into individual data frames, additional cleaning rules were applied. In some years, wage data contained invalid numeric characters such as dollar signs or a range of wages in a single column. To get around this, dollar signs were removed before converting to numeric, and ranges were split into a \textit{from} and a \textit{to} column. Ultimately, all wages were transformed into ranges. If there was no range for the wage, then the wage itself was used as the range. 
+
+Another normalization task was the wage unit. Some wages were represented as yearly salary, some as hourly, and others as monthly, weekly, and bi-weekly. There can be subtle differences in each type of pay, but these were normalized according to a yearly salary. Hourly wage was multiplied by 40 hours a week and 52 weeks a year. Monthly wage was multiplied by 12, weekly by 52, and bi-weekly by 26. This allows all wages to be treated roughly on the same scale.
+
+\subsection{Shortcomings}
+
+As mentioned in the previous section, because the data is not homogeneous, there are bound to be disparities. Missing data - columns which are not found across all spreadsheets - is the biggest issue. We can make assumptions when there is sparse data, but it would not be prudent to make assumptions where there is no data. For this reason, we fully disclose the absence data where necessary.
+
+All of the data has been entered by humans at some point, so there are likely many human-generated errors. Some of these can be seen as outliers. 
+
+\section{Methods}
+\subsection{Data product}
+
+\section{Results}
+\subsection{Overview}
+\subsection{Prevailing Wage}
+\subsection{Offered Wage}
+\subsection{H-1B vs. PERM}
+
+\section{Conclusion}
 \pagebreak
 
 <<>>=
