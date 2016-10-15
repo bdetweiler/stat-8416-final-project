@@ -11,6 +11,21 @@ visas <- readRDS('H1BVisas.rds')
 
 hist(visas[which(visas$normalized_wage < 250000),]$normalized_wage, breaks=500)
 
+wage <- select(visas, normalized_wage) %>% 
+  filter(!is.na(normalized_wage)) %>%
+  filter(normalized_wage > 0)
+
+
+wage <- select(visas, normalized_prevailing_wage, fy, case_number) %>% 
+  filter(!is.na(normalized_prevailing_wage)) %>%
+  filter(normalized_prevailing_wage > 500000)
+
+summary(wage)
+
+ggplot(wage, aes(x = normalized_wage)) +
+  stat_bin()
+  
+
 findmode <- function(x, na.rm = TRUE) {
   
   if(na.rm){
