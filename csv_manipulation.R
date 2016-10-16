@@ -68,7 +68,13 @@ fy2008$worksite_zip_code <- as.character(fy2008$worksite_zip_code)
 
 fy2008$wage_rate <- as.numeric(fy2008$wage_rate)
 fy2008$wage_rate_from <- fy2008$wage_rate
-fy2008$wage_rate_to <- fy2008$wage_rate
+fy2008$wage_rate_to <- fy2008$max_wage
+
+# If we have a max_wage, assign that to wage_rate_to
+fy2008$wage_rate_to[which(is.na(fy2008$wage_rate_to))] <- fy2008$max_wage[which(is.na(fy2008$wage_rate_to))]
+# Where there is still NAs in wage_rate_to, set equal to wage_rate_from
+fy2008$wage_rate_to[which(is.na(fy2008$wage_rate_to))] <- fy2008$wage_rate_from[which(is.na(fy2008$wage_rate_to))]
+fy2008$wage_rate_to[which(fy2008$wage_rate_to == 0)] <- fy2008$wage_rate_from[which(fy2008$wage_rate_to == 0)]
 
 # FY 2008 column goes by "PART_TIME"
 fy2008$part_time <- fy2008$part_time == "Y"
@@ -83,7 +89,7 @@ setcolorder(fy2008, columnOrder)
 ######################################################################################################
 # Copied and pasted from first part of Excel sheet - These are the columns we want to read
 # These are not in the order that will be in the CSV
-
+colsToRead <- unlist(strsplit('2009	H-1B_Case_Data_FY2009	CASE_NO	SUBMITTED_DATE	PROGRAM_DESIGNATION	EMPLOYER_NAME	EMPLOYER_ADDRESS1	EMPLOYER_ADDRESS2	EMPLOYER_CITY	EMPLOYER_STATE	EMPLOYER_POSTAL_CODE	CITY_1	STATE_1	NA	NBR_IMMIGRANTS	DOL_DECISION_DATE	BEGIN_DATE	END_DATE	NA	NA	JOB_TITLE	OCCUPATIONAL_CODE	APPROVAL_STATUS	WITHDRAWN	NA	NA	OCCUPATIONAL_TITLE	WAGE_RATE_1	NA	NA	RATE_PER_1	PREVAILING_WAGE_1	NA	MAX_RATE_1	PART_TIME_1	NA	NA	NA	NA', split = '\t'))
 
 # Missing columnscolsToRead <- unlist(strsplit('2009	H-1B_Case_Data_FY2009	CASE_NO	SUBMITTED_DATE	PROGRAM_DESIGNATION	EMPLOYER_NAME	EMPLOYER_ADDRESS1	EMPLOYER_ADDRESS2	EMPLOYER_CITY	EMPLOYER_STATE	EMPLOYER_POSTAL_CODE	CITY_1	STATE_1	NA	NBR_IMMIGRANTS	DOL_DECISION_DATE	BEGIN_DATE	END_DATE	NA	NA	JOB_TITLE	OCCUPATIONAL_CODE	APPROVAL_STATUS	WITHDRAWN	NA	NA	OCCUPATIONAL_TITLE	WAGE_RATE_1	NA	NA	RATE_PER_1	PREVAILING_WAGE_1	NA	MAX_RATE_1	PART_TIME_1	NA	NA	NA	NA', split = '\t')) 
 colsToRead <- colsToRead[!colsToRead %in% 'NA']
@@ -92,6 +98,7 @@ colsToRead <- colsToRead[3:length(colsToRead)]
 
 # Copied and pasted from second part of excel sheet
 renameCols <- unlist(strsplit('submitted_date	case_number	visa_class	employer_name	employer_address1	employer_address2	employer_city	employer_state	employer_zip_code	total_workers	begin_date	end_date	job_title	dol_decision_date	job_code	occupational_title	status	wage_rate	wage_unit	max_wage	part_time	worksite_city	worksite_state	prevailing_wage	withdrawn', split = '\t'))
+
 file_name <- 'H-1B_2009.csv'
 fy2009 <- fread(file_name, 
                 header = TRUE, 
@@ -145,6 +152,12 @@ fy2009$worksite_zip_code <- as.character(fy2009$worksite_zip_code)
 fy2009$wage_rate <- as.numeric(fy2009$wage_rate)
 fy2009$wage_rate_from <- fy2009$wage_rate
 fy2009$wage_rate_to <- fy2009$wage_rate
+
+# If we have a max_wage, assign that to wage_rate_to
+fy2009$wage_rate_to[which(is.na(fy2009$wage_rate_to))] <- fy2009$max_wage[which(is.na(fy2009$wage_rate_to))]
+# Where there is still NAs in wage_rate_to, set equal to wage_rate_from
+fy2009$wage_rate_to[which(is.na(fy2009$wage_rate_to))] <- fy2009$wage_rate_from[which(is.na(fy2009$wage_rate_to))]
+fy2009$wage_rate_to[which(fy2009$wage_rate_to == 0)] <- fy2009$wage_rate_from[which(fy2009$wage_rate_to == 0)]
 
 # FY 2009 non-Icert column goes by "PART_TIME"
 fy2009$part_time <- fy2009$part_time == "Y"
@@ -682,8 +695,6 @@ fy2015$prevailing_wage <- as.numeric(fy2015$prevailing_wage)
 fy2015$employer_zip_code <- as.character(fy2015$employer_zip_code)
 fy2015$worksite_zip_code <- as.character(fy2015$worksite_zip_code)
 
-fy2015$wage_rate
-
 wage_rate_tmp <- gsub("\\$", "", fy2015$wage_rate)
 wage_rate_tmp <- gsub(" ", "", wage_rate_tmp)
 wage_rate_from <- gsub("-.*", "", wage_rate_tmp)
@@ -781,17 +792,9 @@ columnOrder <- unlist(strsplit('fy	file_name	case_number	submitted_date	visa_cla
 setcolorder(fy2016, columnOrder)
 
 
-# finalDF <- rbind(fy2008, fy2009, fill = TRUE)
-finalDF <- rbind(fy2008, fy2009, fy2009iCert, fy2010, fy2011, fy2012, fy2013, fy2014, fy2015, fy2016)
-
-# Checkpoint
-# saveRDS(finalDF, 'H1BVisas.rds')
-
+visas <- rbind(fy2008, fy2009, fy2009iCert, fy2010, fy2011, fy2012, fy2013, fy2014, fy2015, fy2016)
 
 # Post processing
-
-# visas <- readRDS('H1BVisas.rds')
-visas <- finalDF
 
 visas$submitted_date <- as.Date(visas$submitted_date, format = '%m/%d/%Y')
 visas$dol_decision_date <- as.Date(visas$dol_decision_date, format = '%m/%d/%Y')
@@ -854,7 +857,7 @@ visas$prevailing_wage_unit[visas$prevailing_wage_unit == 'wk'] <- 'WK'
 visas$prevailing_wage_unit[visas$prevailing_wage_unit == 'hour'] <- 'HR'
 visas$prevailing_wage_unit[visas$prevailing_wage_unit == 'week'] <- 'WK'
 visas$prevailing_wage_unit[visas$prevailing_wage_unit == 'month'] <- 'MTH'
-visas$prevailing_wage_unit[visas$prevailing_wage_unit == 'year'] <- 'MTH'
+visas$prevailing_wage_unit[visas$prevailing_wage_unit == 'year'] <- 'YR'
 visas$prevailing_wage_unit[visas$prevailing_wage_unit == 'bi'] <- 'BIWK'
 visas$prevailing_wage_unit[visas$prevailing_wage_unit == 'BI'] <- 'BIWK'
 visas$prevailing_wage_unit[visas$prevailing_wage_unit == 'Bi-Weekly'] <- 'BIWK'
@@ -866,6 +869,7 @@ visas$prevailing_wage_unit[visas$prevailing_wage_unit == 'Year'] <- 'YR'
 visas$prevailing_wage_unit[visas$prevailing_wage_unit == 'Select Pay Range'] <- NA
 visas$prevailing_wage_unit[visas$prevailing_wage_unit == ''] <- NA
 
+
 visas$worksite_state[visas$worksite_state == 'MH'] <- 'MI'
 visas$worksite_state[visas$worksite_state == 'MP'] <- 'MI'
 visas$worksite_state[visas$worksite_state == 'FM'] <- 'FL'
@@ -875,6 +879,10 @@ visas$worksite_state[visas$worksite_state == 'GU'] <- 'Guam'
 
 # Some were for AZ, some were for AK, and some were just like, 'asdasd' 
 visas$worksite_state[visas$worksite_state == 'AS'] <- NA
+
+# 2008 and 2009 data is missing prevailing wage unit, so we'll assume it's the same as wage_unit
+
+visas$prevailing_wage_unit[which(is.na(visas$prevailing_wage_unit))] <- visas$wage_rate[which(is.na(visas$prevailing_wage_unit))]
 
 normalized_wage <- visas$wage_unit
 normalized_wage[which(normalized_wage == 'YR')] <- 1
@@ -887,7 +895,6 @@ normalized_wage[which(is.na(normalized_wage))] <- 0
 normalized_wage <- as.numeric(normalized_wage)
 
 visas$normalized_wage <- ((normalized_wage * visas$wage_rate_from) + (normalized_wage * visas$wage_rate_to)) / 2
-
 
 normalized_prevailing_wage <- visas$prevailing_wage_unit
 normalized_prevailing_wage[which(normalized_prevailing_wage == 'YR')] <- 1
@@ -902,9 +909,76 @@ normalized_prevailing_wage <- as.numeric(normalized_prevailing_wage)
 visas$normalized_prevailing_wage <- normalized_prevailing_wage * visas$prevailing_wage
 visas$normalized_prevailing_wage[which(visas$normalized_prevailing_wage == 0)] <- NA
 
+# There were some major problems with the 2008 and 2009 wage rate data so we have to remove some outliers
+# We'll assume anything over $2,000,000 is an outlier
+visas$normalized_prevailing_wage[which(visas$normalized_prevailing_wage > 2000000)] <- NA
+visas$normalized_wage[which(visas$normalized_wage > 2000000)] <- NA
+
+visas$agent_attorney_first_name[which(visas$agent_attorney_first_name == '')] <- NA
+visas$agent_attorney_last_name <- visas$agent_attorney_first_name
+visas$agent_attorney_last_name <- sub(',.*', '', visas$agent_attorney_first_name)
+visas$agent_attorney_first_name <- sub('ESQ., ', '', sub('\\w+, ', '', visas$agent_attorney_first_name))
+
+
 # Save post processing
 saveRDS(visas, 'H1BVisas.rds')
 
+visas <- readRDS('H1BVisas.rds')
+
+unique(visas$job_code)
+
+# 2008 and 2009 used these Dictionary of Occupational Titles (DOT) codes found here:
+# https://www.uscis.gov/files/form/m-746.pdf
+file_name <- 'dot_job_codes.csv'
+dot_job_codes <- fread(file_name,  header = TRUE)
+
+visas <- merge(visas, dot_job_codes, by.x="job_code", by.y="dot_job_code", all.x=T, all.y=F)
+unique(visas$fy[which(!is.na(visas$dot_job_title))])
+
+# Only 2008 and 2009-non-iCERT uses the DOT codes
+visas$dot_job_title[which(visas$fy > 2009)] <- NA
+visas$dot_job_title[which(visas$file_name == 'H-1B_2009_icert.csv')] <- NA
+
+colsToRead <- c('2007 NAICS US Code', '2007 NAICS US Title')
+renameCols <- c('naics_code', 'naics_title')
+file_name <- '2-digit_2007_naics_codes.csv'
+naics_2007 <- fread(file_name, 
+                    header = TRUE, 
+                    select = colsToRead,
+                    stringsAsFactors = FALSE,
+                    col.names = renameCols)
+
+# Blank line
+naics_2007[1]$naics_code <- NA
+naics_2007[1]$naics_title <- NA
+
+# Of course they use ranges. Of course.
+naics_2007$naics_code[naics_2007$naics_code == '44-45'] <- '44'
+naics_2007 <- rbind(naics_2007, as.list(c(45, 'Retail Trade')))
+
+naics_2007$naics_code[naics_2007$naics_code == '48-49'] <- '48'
+naics_2007 <- rbind(naics_2007, as.list(c(49, 'Transportation and Warehousing')))
+
+naics_2007$naics_code[naics_2007$naics_code == '31-33'] <- '31'
+naics_2007 <- rbind(naics_2007, as.list(c(32, 'Manufacturing')))
+naics_2007 <- rbind(naics_2007, as.list(c(33, 'Manufacturing')))
+
+naics_2007$naics_code <- as.numeric(naics_2007$naics_code)
+
+visas <- merge(visas, naics_2007, by.x="job_code", by.y="naics_code", all.x=T, all.y=F, allow.cartesian = T)
+
+#colsToRead <- c('2012 NAICS US   Code', '2012 NAICS US Title')
+#renameCols <- c('naics_code', 'naics_title')
+#file_name <- '2-digit_2012_naics_codes.csv'
+#naics_2012 <- fread(file_name, 
+                    #header = TRUE,
+                    #select = colsToRead,
+                    #stringsAsFactors = FALSE,
+                    #col.names = renameCols)
+#head(naics_2012)
+
+# Save post processing
+saveRDS(visas, 'H1BVisas.rds')
 
 
 # visas <- readRDS('H1BVisas.rds')

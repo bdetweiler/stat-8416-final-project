@@ -9,11 +9,22 @@ options(scipen=999)
 visas <- readRDS('H1BVisas.rds')
 
 
-hist(visas[which(visas$normalized_wage < 250000),]$normalized_wage, breaks=500)
+unique(visas$naics_title)
 
-wage <- select(visas, normalized_wage) %>% 
+hist(visas[which(visas$naics_title == 'Computer Systems Design Services'),]$normalized_wage, breaks=500, xlim = c(0, 500000))
+
+hist(visas[which(visas$naics_title == 'Parole Offices and Probation Offices'),]$normalized_wage, breaks=500, xlim=c(0, 500000))
+
+wage <- select(visas, normalized_wage, fy, case_number) %>% 
   filter(!is.na(normalized_wage)) %>%
-  filter(normalized_wage > 0)
+  filter(normalized_wage > 500000)
+
+case <- filter(visas, case_number == 'I-09177-5040915')
+
+
+case2009 <- select(fy2009, case_number, wage_rate, wage_rate_from, wage_rate_to, wage_unit) %>%
+  filter(wage_unit != 'YR')
+
 
 
 wage <- select(visas, normalized_prevailing_wage, fy, case_number) %>% 
