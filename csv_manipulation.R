@@ -980,6 +980,11 @@ visas <- merge(visas, naics_2007, by.x="job_code", by.y="naics_code", all.x=T, a
 # Save post processing
 saveRDS(visas, 'H1BVisas.rds')
 
+addy <- cbind(visas$employer_name, visas$employer_address1, visas$employer_address2, visas$employer_city, visas$employer_state,  visas$employer_zip_code)
+colnames(addy) <- c('employer_name', 'employer_address1', 'employer_address2', 'employer_city', 'employer_state', 'employer_zipcode')
+uaddy <- unique(addy)
+saveRDS(uaddy, 'H1BUniqueAddresses.rds')
+
 
 # visas <- readRDS('H1BVisas.rds')
 
