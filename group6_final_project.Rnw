@@ -41,6 +41,16 @@ Foreign born workers make up 17\% of the United States workforce. In 2014, nearl
 
 \pagenumbering{arabic} % reset numbering to normal for the main content
 
+<<echo=FALSE, warning=FALSE, error=FALSE, message=FALSE>>=
+# Include necessary libraries
+library(data.table)
+library(dplyr)
+library(mgcv)
+library(bit64)
+library(ggplot2)
+library(knitr)
+@
+
 % \newpage
 \section{Introduction}
 The U.S. Department of Labor provides data for Labor Condition Applications and PERM Labor Certifications dating back to 2008. This data contains a wealth of job market information including prevailing wage, and the wages offered by particular companies to individuals with particular qualifications. 
@@ -76,12 +86,177 @@ Another issue is the switch from U.S. Citizenship and Immigration Services Dicti
 
 
 \section{Methods}
+
+The numeric data provided by the H-1B and PERM datasets are mostly in the form of wages, both the wage that the employer is offering and the prevailing wage.\footnote{Prevailing wage is defined as the hourly wage, usual benefits and overtime, paid to the majority of workers, laborers, and mechanics within a particular geographic area.} Also of interest, are the number of workers an applicant is filing for, and the implicit number of applications faceted by status and year.
+
 \subsection{Data product}
 
+The data is provided as an interactive \texttt{Shiny} application, that allows the user to filter wages by various criteria. 
+
+The plots consist of distributions and and heat maps of wages across the United States.
 
 \section{Results}
+
+
 \subsection{Overview}
+
 \subsection{Prevailing Wage}
+
+It would be interesting to see how many workers are getting approved for H-1B visas over the years. We can see this by plotting the number of workers within each visa status category (Certified, Denied, and Withdrawn). 
+
+<<echo=FALSE, fig.height=4, fig.width=6, warning=FALSE>>=
+options(scipen=999)
+
+visas <- readRDS('VisasByJob.rds')
+
+visas.by.status <- select(visas, fy, total_workers, status) %>%
+    filter(!is.na(status)) %>%
+    group_by(status, fy) %>%
+    summarise(tot = sum(total_workers, na.rm = TRUE))
+
+visas.by.status$status <- as.factor(visas.by.status$status)
+
+ggplot(visas.by.status, aes(x = status, y = tot))  +
+  geom_bar(stat = "identity") +
+  scale_x_discrete(labels=(c("C", "D", "W"))) +
+  facet_grid(. ~ fy) +
+  labs(title = "Number of workers by application status, 2008 - 2016", x = "Application Status", y = "Numer of workers requested")
+
+@
+
+Clearly, we can see huge outliers in 2010 and 2013 that don't seem to fit the data. These could be explained as outliers. Upon investigation, it is safe to say that all H-1B applications requesting over 1,000 total workers are either denied or withdrawn.
+
+<<echo=FALSE>>=
+# In case we want to investigate the outliers
+# case.numbers <- visas[which(visas$total_workers %in% sort(visas$total_workers, decreasing = T)[1:20])]$case_number
+# case.numbers
+@ 
+
+<<echo=FALSE>>=
+# Let's look at the statuses of the higher ones and if they were denied, we'll exclude them. 
+ 
+outliers.by.status <- select(visas, fy, total_workers, status) %>%
+    filter(!is.na(status)) %>%
+    filter(total_workers > 1000) %>%
+    arrange(total_workers, fy)
+  
+kable(outliers.by.status, format = "latex", caption = "Applications requesting over 1000 workers", booktabs = TRUE)
+@
+
+Once we remove all requests for more than 1,000 workers, we can start to see a pattern. The number of denied and withdrawn applications remains fairly constant, but the number of certified workers shows a steady rise after 2010, most likely due to a strengthening economy and returning jobs. 
+
+<<echo=FALSE, warning=FALSE>>=
+
+# Everything over 1000 workers were either denied or withdrawn. We can ignore those.
+   
+visas.by.status <- select(visas, fy, total_workers, status) %>%
+    filter(!is.na(status)) %>%
+    filter(status != "") %>%
+    filter(total_workers < 1000) %>%
+    group_by(status, fy) %>%
+    summarise(tot = sum(total_workers))
+   
+ggplot(visas.by.status, aes(x = status, y = tot))  +
+  geom_bar(stat = "identity") +
+  scale_x_discrete(labels=(c("C", "D", "W"))) +
+  facet_grid(. ~ fy) +
+  labs(title = "Number of workers by application status, 2008 - 2016", x = "Application Status", y = "Numer of workers requested")
+
+# Data from the BLS: http://data.bls.gov/timeseries/CES0000000001?output_view=net_1mth
+jobs2008 <- sum(c(19, -86, -78, -210, -185, -165, -209, -266, -452, -473, -769, -695)) * 1000
+jobs2009 <- sum(c(-791, -703, -823, -686, -351, -470, -329, -212, -219, -200, -7, -279)) * 1000
+jobs2010 <- sum(c(28, -69, 163, 243, 522, -133, -70, -34, -52, 257, 123, 88)) * 1000
+jobs2011 <- sum(c(42, 188, 225, 346, 73, 235, 70, 107, 246, 202, 146,  207)) * 1000
+jobs2012 <- sum(c(338, 257, 239, 75, 115, 87, 143, 190, 181, 132, 149, 243)) * 1000
+jobs2013 <- sum(c(190, 311, 135, 192, 218, 146, 140, 269, 185, 189, 291, 45)) * 1000
+jobs2014 <- sum(c(187, 168, 272, 310, 213, 306, 232, 218, 286, 200, 331, 292)) * 1000
+jobs2015 <- sum(c(221, 265, 84, 251, 273, 228, 277, 150, 149, 295, 280, 271)) * 1000
+jobs2016 <- sum(c(168, 233, 186, 144, 24, 271, 252, 167, 156, 0, 0, 0)) * 1000
+
+jobs <- as.integer(c(jobs2008, jobs2009, jobs2010, jobs2011, jobs2012, jobs2013, jobs2014, jobs2015, jobs2016))
+years <- as.double(2008:2016)
+stat.code <- as.character(rep("JOBS", 9))
+job.stats <- data.frame(stat.code, years, jobs)
+colnames(job.stats) <- c("status", "fy", "tot")
+
+visas.by.status <- select(visas, fy, total_workers, status) %>%
+    filter(!is.na(status)) %>%
+    filter(status == "CERTIFIED") %>%
+    filter(total_workers < 1000) %>%
+    group_by(status, fy) %>%
+    summarise(tot = sum(total_workers))
+
+visas.by.status <- rbind(as.data.frame(visas.by.status), job.stats)
+
+ggplot(visas.by.status, aes(x = status, y = tot, fill = status))  +
+  geom_bar(stat = "identity") +
+  scale_x_discrete(labels=NULL) +
+  facet_grid(. ~ fy) +
+  labs(title = "Number of workers by application status vs. U.S. job market, 2008 - 2016", x = "Certified H-1Bs vs. U.S. Job Market")
+
+# We'll count the total number of applications that were denied (as opposed to the total workers requested)
+# visas.by.status <- select(visas, fy, total_workers, status) %>%
+#    filter(!is.na(status)) %>%
+#    filter(status == "DENIED") %>%
+#    filter(total_workers < 1000) 
+
+# ggplot(visas.by.status, aes(x = fy))  +
+#  geom_bar(stat = "bin")
+
+# The iCERT system was implemented in 2009. It could be inferred that over the years, the system has gotten better
+# possibly at form input validation
+
+# visas.by.status <- select(visas, fy, total_workers, status) %>%
+#    filter(!is.na(status)) %>%
+#    filter(status == "WITHDRAWN") %>%
+#    filter(total_workers < 1000) 
+
+# ggplot(visas.by.status, aes(x = fy))  +
+#   geom_bar(stat = "bin")
+
+# 2008 and 2009 had a huge number of applications withdrawn, likely due to the financial crisis and bad economy
+# However, it's interesting to see the uptick in the last few years
+
+# visas.by.status <- select(visas, fy, total_workers, status) %>%
+#    filter(!is.na(status)) %>%
+#    filter(status == "CERTIFIED-WITHDRAWN") %>%
+#    filter(total_workers < 1000) 
+
+#ggplot(visas.by.status, aes(x = fy))  +
+#  geom_bar(stat = "bin")
+
+# This is not a terribly interesting status or statistic
+
+#visas.by.status <- select(visas, fy, total_workers, status) %>%
+#    filter(!is.na(status)) %>%
+#    filter(status %in% c("PENDING QUALITY AND COMPLIANCE REVIEW - UNASSIGNED", "INVALIDATED", "REJECTED")) %>%
+#    filter(total_workers < 1000) 
+
+# ggplot(visas.by.status, aes(x = fy))  +
+#   geom_bar(stat = "bin")
+
+# only 15 and 2 for 2013 and 2014 only - we can probably ignore these guys
+
+# visas.by.status <- select(visas, fy, total_workers, status) %>%
+#     filter(!is.na(status)) %>%
+#     filter(status == "REJECTED") %>%
+#     filter(total_workers < 1000) 
+
+# ggplot(visas.by.status, aes(x = fy))  +
+#   geom_bar(stat = "bin")
+
+
+
+hist(visas[which(visas$naics_title == 'Computer Systems Design Services'),]$normalized_wage, breaks=500, xlim = c(0, 500000))
+
+hist(visas[which(visas$naics_title == 'Parole Offices and Probation Offices'),]$normalized_wage, breaks=500, xlim=c(0, 500000))
+
+wage <- select(visas, normalized_wage, fy, case_number) %>% 
+  filter(!is.na(normalized_wage)) %>%
+  filter(normalized_wage > 500000)
+
+@
+
 \subsection{Offered Wage}
 \subsection{H-1B vs. PERM}
 

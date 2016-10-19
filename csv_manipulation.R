@@ -919,6 +919,13 @@ visas$agent_attorney_last_name <- visas$agent_attorney_first_name
 visas$agent_attorney_last_name <- sub(',.*', '', visas$agent_attorney_first_name)
 visas$agent_attorney_first_name <- sub('ESQ., ', '', sub('\\w+, ', '', visas$agent_attorney_first_name))
 
+# Only worried about 3 statuses - CERTIFIED, WITHDRAWN, DENIED
+visas$status[which(visas$status == "")] <- NA
+visas$status[which(visas$status == "INVALIDATED")] <- "DENIED"
+visas$status[which(visas$status == "PENDING QUALITY AND COMPLIANCE REVIEW - UNASSIGNED")] <- NA
+visas$status[which(visas$status == "CERTIFIED-WITHDRAWN")] <- "WITHDRAWN"
+visas$status[which(visas$status == "REJECTED")] <- "DENIED"
+
 
 # Save post processing
 saveRDS(visas, 'H1BVisas.rds')
