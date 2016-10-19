@@ -1,0 +1,55 @@
+\documentclass{article}
+
+%\usepackage[margin=1in]{geometry}   % set up margins
+\usepackage[vmargin=1in,hmargin=1in]{geometry}
+\usepackage{tikz}
+\usepackage{booktabs}
+
+\usepackage[backend=bibtex]{biblatex}
+
+\begin{titlepage}
+
+\begin{center}
+
+\textup{\small {\bf MATH 8756 Final Project} \\ Report}\\[0.2in]
+
+% Title
+\Large \textbf {An Analysis of Scotch Whisky Prices}\\[0.5in]
+
+%       \small \emph{Submitted in partial fulfillment of\\
+%        the requirements for the award of the degree of}
+%        \vspace{.2in}
+
+%       {\bf Bachelor of Technology \\in\\ Computer Science and Engineering}\\[0.5in]
+
+% Submitted by
+\normalsize Submitted by \\
+\begin{table}[h]
+\centering
+\begin{tabular}{lr}\hline \\
+Brian Detweiler \\
+\\ \hline
+\end{tabular}
+\end{table}
+
+\vspace{.1in}
+Thursday, May 5th, 2016
+%{\textbf{<Guide's name here>}}\\[0.2in]
+
+\vfill
+
+% Bottom of the page
+
+
+\end{center}
+
+\end{titlepage}
+
+%\begin{document}
+
+%\title {An Analysis of H-1B and PERM Visa Workers in the United States}
+%\author{Arunkumar Ranganathan\\ Brian Detweiler\\ Jacques Anthony}
+
+%\maketitle
+
+
