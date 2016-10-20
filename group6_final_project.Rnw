@@ -529,39 +529,12 @@ geom_bar(stat="identity") +xlab("University of Education")+ylab("High Avg. Salar
 
 We are seeing outliers in the wage offered both in H1B and Perm. How we deal with these outliers would change the way we come up with statistical inferences. Right now Perm data doesnt exclude outliers, however showing data as such clearly skews the results in favor of one or the other. One way to mitigate this is to include only approved applications to remove any error from denial cases. We can also consider excluding outliers that are above 2 standard deviations from the mean.
 
+% TODO:
 \subsection{H-1B vs. PERM}
 
+% TODO:
 \section{Conclusion}
 \pagebreak
-
-<<>>=
-#visas <- readRDS('H1BVisas.rds')
-#perm <- readRDS('PermData.rds')
-#perm.map <- readRDS('PermEmpMapsdat.rds')
-
-#hist(visas[which(visas$normalized_wage < 250000),]$normalized_wage, breaks=500)
-
-#findmode <- function(x, na.rm = TRUE) {
-  
-  #if(na.rm){
-    #x = x[!is.na(x)]
-  #}
-  
-  #ux <- unique(x)
-  #return(ux[which.max(tabulate(match(x, ux)))])
-#}
-
-#wage.mode <- findmode(visas$normalized_wage)
-#wage.mode
-#abline(v=wage.mode + 500, col="red")
-
-#hist(visas[which(visas$normalized_prevailing_wage < 250000),]$normalized_prevailing_wage, breaks=500)
-#pw.mode <- findmode(visas$normalized_prevailing_wage)
-#pw.mode
-#abline(v=wage.mode + 500, col="red")
-
-
-@
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
