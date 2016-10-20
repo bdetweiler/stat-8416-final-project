@@ -70,7 +70,8 @@ Using the UNIX tool \texttt{head -n 10 *.csv > headers.txt}, we took the first t
 
 It is also important to note that there was not always a match for the columns we had selected. For instance, we found some interesting information regarding the attorney used by the employer to file the H-1B application. This was only introduced in the 2015 and 2016 datasets, however, so prior years would have no data for this.
 
-After determining the standard columns, we wrote an import script in \textsf{R} that made use of the \texttt{data.table::fread} function. This allowed us to not only quickly read in the file, but also select only the columns of interest, and rename them to the standard naming convention upon read. 
+After determining the standard columns, we wrote an import script in \textsf{R} that made use of the
+\texttt{data.table::fread} function. This allowed us to not only quickly read in the file, but also select only the columns of interest, and rename them to the standard naming convention upon read. 
 
 Once the data was read into individual data frames, additional cleaning rules were applied. In some years, wage data contained invalid numeric characters such as dollar signs or a range of wages in a single column. To get around this, dollar signs were removed before converting to numeric, and ranges were split into a \textit{from} and a \textit{to} column. Ultimately, all wages were transformed into ranges. If there was no range for the wage, then the wage itself was used as the range. 
 
@@ -81,16 +82,14 @@ Another normalization task was the wage unit. Some wages were represented as yea
 Perm data is available from year 2008 to current. Year 2015 and 2016 have over 120 attributes while 2008-2014 have 27-30 attributes, we plan on using 27 attributes common from 2008-16, while additional 14 attributes only on 2015-16 is useful for limited analysis. We can find information such as employer details, employee details, job function, salary, university, job city, number of years of experience, country of citizenship, and industry.
 
 Steps:
-Download PERMFY2008.xlsx,PERMFY2009.xlsx, PERMFY2010.xlsx,PERMFY2011.xlsx,
-PERMFY2012Q4.xlsx,PERMFY2013.xlsx, PERMFY14Q4.xlsx, PERM_DisclosureDataFY15Q4.xlsx,
-PERMDisclosureDataFY16.xlsx from department of labor website, under disclosure data. Set working directory as downloaded files directory. Install required libraries before running this script
+Download PERMFY2008.xlsx to PERMDisclosureDataFY16.xlsx under disclosure data from department of labor website, under disclosure data. Set working directory as downloaded files directory. Install required libraries before running this script
 
 Perm data downloaded from department of foreign labor is in .xlsx form. R-Program that loads this data uses two libraries 1) xlsx and 2) dplyr. We have loaded this data in R - cleaned them, gathered only required columns and created .rds file. In this process of creating final file, we went through all the files and got only columns that are essential for our data analysis. Multiple .xlsx files are initially filtered with select 41 columns and merged them all back again into one large file with 622,637 records. In short, two-step process to get a clean perm data, first step is to download data from DOL, then, run code to parse the file create a final output - with no intermediate manual steps required. We will discuss what and how we cleaned the data next. 
 In total there were 9 files downloaded, with each files ranging from 40,000 to 90,000 records. Most column names from 2008-2014 were same with minor differences, while 2015-16 columns were similar. Column names are standardized to 2016 for posterity - hoping next years' data would be in the same format as 2016. To standardize all column, we have removed any space between columns to underscore and created all column names in upper case. First step in preparing data, we selected all the relevant columns and filled in not available columns as NA's (such as employer address 2 in 2008 year data).  Subsetting these columns within a function is created in order to call the function to create final subset for each year. Once we have all the data available for each year, final final is created with raw data without standardizing or further cleaning. This dataset can be used by anyone looking for perm data and can standardize based on their need.
 
 Data cleaning specific to this project is also required not just for standardizing data but also to have the data in a specific format.
 
-During the process of creating final file, most columns are read as text and few columns such as 'decision_date' are read as date, while salary information are read as numeric. Decision date is first transformed to YYYY-MM-DD format for consistency within our database.
+During the process of creating final file, most columns are read as text and few columns such as decision_date are read as date, while salary information are read as numeric. Decision date is first transformed to YYYY-MM-DD format for consistency within our database.
 
 Transforming all character variables to upper case deemed as necessary to avoid duplicity or incorrectness when performing data manipulation.
 
@@ -192,7 +191,7 @@ kable(outliers.by.status, format = "latex", caption = "Applications requesting o
 
 Once we remove all requests for more than 1,000 workers, we can start to see a pattern. The number of denied and withdrawn applications remains fairly constant, but the number of certified workers shows a steady rise after 2010, most likely due to a strengthening economy and returning jobs. 
 
-<<echo=FALSE, warning=FALSE>>=
+<<echo=FALSE, warning=FALSE , fig.height=4, fig.width=6>>=
 
 # Everything over 1000 workers were either denied or withdrawn. We can ignore those.
    
@@ -304,8 +303,7 @@ wage <- select(visas, normalized_wage, fy, case_number) %>%
 
 @
 
-<<echo=FALSE, fig.height=4, fig.width=6, warning=FALSE>>=
-options(scipen=999)
+<<echo=FALSE, fig.height=4, fig.width=6, warning=FALSE, message=F>>=
 
 library(dplyr)
 library(ggplot2)
@@ -317,7 +315,7 @@ library(tidyr)
 
 options(scipen=10)
 
-setwd("C:/Users/pavi/Desktop/UNO/IntroDataScience/Project/Data/testdat")
+# setwd("C:/Users/pavi/Desktop/UNO/IntroDataScience/Project/Data/testdat")
 
 dat_all <-  readRDS(file="PermData.rds")
 
@@ -326,17 +324,21 @@ dat_all <-  readRDS(file="PermData.rds")
 
 
 # average pay of perm applications
-df <- dat_all %>%  dplyr::group_by(YEAR, CASE_STATUS) %>% 
+df <- dat_all %>% filter(CASE_STATUS %in% c('CERTIFIED','CERTIFIED-EXPIRED') )  %>% dplyr::group_by(YEAR, CASE_STATUS) %>% 
   dplyr::summarize(AVG_SALARY = mean(normalized_wage, na.rm = T)) %>% 
   mutate_each(funs(prettyNum(., big.mark=",", digits=0))) %>%
   spread(CASE_STATUS, AVG_SALARY ) 
 
-df1 <- dat_all %>%  dplyr::group_by(YEAR) %>% 
+
+df1 <- dat_all %>% filter(CASE_STATUS %in% c('CERTIFIED','CERTIFIED-EXPIRED') ) %>%  dplyr::group_by(YEAR) %>% 
   dplyr::summarize(AVG_SALARY = mean(normalized_wage, na.rm = T))
 df1$AVG_SALARY = formatC(as.numeric(df1$AVG_SALARY), format="f", digits=0, big.mark=",")
   
 df2=merge(df,df1, by.all='YEAR')
-  
+
+kable(df2 ,format = 'latex', caption = "Average Pay by Case Status", booktabs = TRUE)
+
+
 # number of perm applications
 df <- dat_all %>%  dplyr::group_by(YEAR, CASE_STATUS) %>% 
   dplyr::summarize(APPLICATIONS = n()) %>% 
@@ -349,16 +351,19 @@ df1$APPLICATIONS = formatC(as.numeric(df1$APPLICATIONS), format="f", digits=0, b
 
 df2=merge(df,df1, by.all='YEAR')
 
-  
-  
-# library(knitr)
-# kable(df, format = latex, booktabs = TRUE, digits=2)
+kable(df2 ,format = 'latex', caption = "Applications by year", booktabs = TRUE)
 
+@
+
+We are seeing a higher than average salary from 2008-2013 and in the last 3 years average salary has dropped down, incidently number of applications also have increased as shows in the next table
+
+<<echo=FALSE, warning=FALSE , fig.height=4, fig.width=6>>=  
 
 # Grouping by study major starts here
 
 
-df = filter(dat_all, YEAR>=2015) %>% group_by(JOB_INFO_MAJOR) %>% dplyr::summarise(count_rec = n(), salary = sum(normalized_wage, na.rm = TRUE)) %>%  
+df = filter(dat_all, YEAR>=2015)%>% filter(CASE_STATUS %in% c('CERTIFIED','CERTIFIED-EXPIRED') )%>% 
+  group_by(JOB_INFO_MAJOR) %>% dplyr::summarise(count_rec = n(), salary = sum(normalized_wage, na.rm = TRUE)) %>%  
   arrange(desc(count_rec))
 
 # write.csv(distinct_df, file="Major.csv")
@@ -399,7 +404,8 @@ case
 dat=left_join(dat_all, df, by = 'JOB_INFO_MAJOR')
 dat=subset(dat, !is.na(salary) )
 
-dat1 = df %>%  dplyr::group_by(JOB_MAJOR) %>%  
+dat1 = df %>% 
+  dplyr::group_by(JOB_MAJOR) %>% 
   dplyr::summarise(mean_salary=sum(salary)/sum(count_rec), count_rec=sum(count_rec)) %>%
   dplyr::arrange(desc(mean_salary))
 
@@ -424,9 +430,9 @@ state_by_value$value = state_by_value$count
 state_choropleth(state_by_value, title = "Number of Perm by State",num_colors=1)
 
 
-Desc(dat$salary, main = "Salary distribution", plotit = TRUE)
-
-Desc(dat$CASE_STATUS, plotit = T)
+# Desc(dat$salary, main = "Salary distribution", plotit = TRUE)
+# 
+# Desc(dat$CASE_STATUS, plotit = T)
 
 
 # perm count by year
@@ -435,21 +441,27 @@ df <- dat_all %>%  dplyr::group_by(YEAR, CASE_STATUS) %>%
   dplyr::summarize(AVG_SALARY = mean(normalized_wage, na.rm = T), APPLICATIONS = n()) 
 
 ggplot(df, aes(x=factor(YEAR), y=APPLICATIONS, fill=CASE_STATUS)) + 
-  geom_bar(stat="identity") +xlab("Year")+ylab("Number of Perm")
+  geom_bar(stat="identity") +xlab("Year")+ylab("Number of Perm")+ 
+  theme(legend.position="bottom") 
 
-df1 <- dat_all %>%  dplyr::group_by(FOREIGN_WORKER_INFO_INST) %>% filter(!is.na(FOREIGN_WORKER_INFO_INST)) %>%
+df1 <- dat_all %>% filter(CASE_STATUS %in% c('CERTIFIED','CERTIFIED-EXPIRED')) %>%
+  dplyr::group_by(FOREIGN_WORKER_INFO_INST) %>% filter(!is.na(FOREIGN_WORKER_INFO_INST)) %>%
   dplyr::summarize(AVG_SALARY = mean(normalized_wage, na.rm = T), APPLICATIONS = n()) %>%
   filter(APPLICATIONS > 10)  %>% arrange(desc(AVG_SALARY))  %>%  top_n(10, AVG_SALARY)
 
 ggplot(df1, aes(reorder(x=factor(FOREIGN_WORKER_INFO_INST), -AVG_SALARY), y=AVG_SALARY)) +
 geom_bar(stat="identity") +xlab("University of Education")+ylab("High Avg. Salary")  + coord_flip() +
-  theme(axis.text.x = element_text(angle=75, vjust=1, size=7), axis.text.y = element_text(angle=15, vjust=1, size=5))
+  theme(axis.text.x = element_text(angle=75, vjust=1, size=7), 
+        axis.text.y = element_text(angle=15, vjust=1, size=5))
 
 
 @
 
 
 \subsection{Offered Wage}
+
+We are seeing outliers in the wage offered both in H1B and Perm. How we deal with these outliers would change the way we come up with statistical inferences. Right now Perm data doesnt exclude outliers, however showing data as such clearly skews the results in favor of one or the other. One way to mitigate this is to include only approved applications to remove any error from denial cases. We can also consider excluding outliers that are above 2 standard deviations from the mean.
+
 \subsection{H-1B vs. PERM}
 
 \section{Conclusion}
