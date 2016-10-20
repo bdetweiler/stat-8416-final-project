@@ -54,10 +54,10 @@ library(knitr)
 % \newpage
 \section{Introduction}
 The U.S. Department of Labor provides data for Labor Condition Applications and PERM Labor Certifications dating back to 2008. This data contains a wealth of job market information including prevailing wage, and the wages offered by particular companies to individuals with particular qualifications. 
-In this paper we will analyze two types of visa workers in the US: H1-B and permanent visa workers.To protect foreign workers to get abused by their employers, businesses are required to pay the visa holder the higher of the prevailing wage in the company for the position or the prevailing wage for the occupation in the area of employment.The goal of this paper is to find disparities in wages for domestic and foreign workers if any exist. The H1-B visa program allows businesses to seek help from professionnals with at least a bachelor's degree in areas such as science, technology, engineering, math,and computer related occupations to name a few.From 2000 to 2005 over 50\% of the applicants were from China and India. Each year there's a cap of 65,000 applications for the H-1B visa program. Applicants whose petitons for permanent residency did not get granted must leave the US for a year but are eligible to reapply later on. The maximum length for the H1-B visa is six years. Permanent residency in the US may be granted based on different factors. First, an individual may be granted residency through the H1-B program where the employer petitions for permanent residency on his behalf. Second, people with remarkable ability in science, education, arts, business, and education such as  professors, researchers, or business executives and managers are eligible to apply for permanent residency without a labor crefication. Lastly,business investors who invest over half a million dollars in the US, employees of US foreign service posts, retired employees from international organizations, and other class of aliens may also petition for permanent residency with no labor certification. The cap for the number of applications available each year is approximately 140,000.
+In this paper we will analyze two types of visa workers in the US: H1-B and permanent visa workers.To protect foreign workers to get abused by their employers, businesses are required to pay the visa holder the higher of the prevailing wage in the company for the position or the prevailing wage for the occupation in the area of employment.The goal of this paper is to find disparities in wages for domestic and foreign workers if any exist. The H1-B visa program allows businesses to seek help from professionnals with at least a bachelor's degree in areas such as science, technology, engineering, math,and computer related occupations to name a few.From 2000 to 2005 over 50\% of the applicants were from China and India. Each year there's a cap of 65,000 applications for the H-1B visa program and additional 20,000 applications for Applicants with U.S Masters degree. Applicants whose petitons for permanent residency did not get granted must leave the US for a year but are eligible to reapply later on. The maximum length for the H1-B visa is six years. Permanent residency in the US may be granted based on different factors. First, an individual may be granted residency through the H1-B program where the employer petitions for permanent residency on his behalf. Second, people with remarkable ability in science, education, arts, business, and education such as  professors, researchers, or business executives and managers are eligible to apply for permanent residency without a labor crefication. Lastly,business investors who invest over half a million dollars in the US, employees of US foreign service posts, retired employees from international organizations, and other class of aliens may also petition for permanent residency with no labor certification. The cap for the number of applications available each year is approximately 140,000.
 
 \subsection{Document reproducibility}
-The entirety of this project is reproducible. 
+The entirety of this project is reproducible using R (version 3.1 and above) with Knitr package for R. Anyone with R version 3.1 with Knitr can unweave the document and reproduce all the text code and embedded R charts. 
 
 \section{About the data}
 The Office of Foreign Labor Certification, under the Department of Labor provides data for PERM Labor Certification (LC) applications and Labor Condition Applications (LCA) via XLSX files. Data is available from 2008 onward. The iCERT system was implemented in 2009, so there are two files for 2009. Each file is structured similar to the others, but there are differences which must be addressed.
@@ -76,6 +76,42 @@ Once the data was read into individual data frames, additional cleaning rules we
 
 Another normalization task was the wage unit. Some wages were represented as yearly salary, some as hourly, and others as monthly, weekly, and bi-weekly. There can be subtle differences in each type of pay, but these were normalized according to a yearly salary. Hourly wage was multiplied by 40 hours a week and 52 weeks a year. Monthly wage was multiplied by 12, weekly by 52, and bi-weekly by 26. This allows all wages to be treated roughly on the same scale.
 
+\subsection{Perm Data preparation}
+
+Perm data is available from year 2008 to current. Year 2015 and 2016 have over 120 attributes while 2008-2014 have 27-30 attributes, we plan on using 27 attributes common from 2008-16, while additional 14 attributes only on 2015-16 is useful for limited analysis. We can find information such as employer details, employee details, job function, salary, university, job city, number of years of experience, country of citizenship, and industry.
+
+Steps:
+Download PERMFY2008.xlsx,PERMFY2009.xlsx, PERMFY2010.xlsx,PERMFY2011.xlsx,
+PERMFY2012Q4.xlsx,PERMFY2013.xlsx, PERMFY14Q4.xlsx, PERM_DisclosureDataFY15Q4.xlsx,
+PERMDisclosureDataFY16.xlsx from department of labor website, under disclosure data. Set working directory as downloaded files directory. Install required libraries before running this script
+
+Perm data downloaded from department of foreign labor is in .xlsx form. R-Program that loads this data uses two libraries 1) xlsx and 2) dplyr. We have loaded this data in R - cleaned them, gathered only required columns and created .rds file. In this process of creating final file, we went through all the files and got only columns that are essential for our data analysis. Multiple .xlsx files are initially filtered with select 41 columns and merged them all back again into one large file with 622,637 records. In short, two-step process to get a clean perm data, first step is to download data from DOL, then, run code to parse the file create a final output - with no intermediate manual steps required. We will discuss what and how we cleaned the data next. 
+In total there were 9 files downloaded, with each files ranging from 40,000 to 90,000 records. Most column names from 2008-2014 were same with minor differences, while 2015-16 columns were similar. Column names are standardized to 2016 for posterity - hoping next years' data would be in the same format as 2016. To standardize all column, we have removed any space between columns to underscore and created all column names in upper case. First step in preparing data, we selected all the relevant columns and filled in not available columns as NA's (such as employer address 2 in 2008 year data).  Subsetting these columns within a function is created in order to call the function to create final subset for each year. Once we have all the data available for each year, final final is created with raw data without standardizing or further cleaning. This dataset can be used by anyone looking for perm data and can standardize based on their need.
+
+Data cleaning specific to this project is also required not just for standardizing data but also to have the data in a specific format.
+
+During the process of creating final file, most columns are read as text and few columns such as 'decision_date' are read as date, while salary information are read as numeric. Decision date is first transformed to YYYY-MM-DD format for consistency within our database.
+
+Transforming all character variables to upper case deemed as necessary to avoid duplicity or incorrectness when performing data manipulation.
+
+Wage information is marked in unit as weekly, monthly, bi-weekly, and annually. This wage units weren't consistent in the file - so we have to make all the weekly to 'WK', monthly to' MTH' and bi-weekly to 'BIWK' and yearly to 'YR' across file
+
+Wage information was normalized to create a new column just with annual salary - i.e. weekly, hourly, monthly, and bi-weekly salaries are transformed to yearly. Range of salary of salary is also normalized in this step.
+
+Employer zip codes are trimmed to 5 digits to keep all the zip codes at the same level of depth
+
+Employment state data is both at abbreviated and expanded level. We need to standardize either as a two digit code or expanded for consistency - for this exercise state names are created at expanded level for all 50 US states as well as US territories
+
+Next we need to create a unique id to tie all the information back together as well as to create index in the future - row number is created as unique id 
+
+This cleaned data is saved as an .rds file before next step.
+
+Another .rds file (PermEmpMapsdat.rds) - one is with summarized employer name address, city, state and zip codes order by number or perm applications processed and by their mean salary. This dataset would give us which employer sponsors most employees for permanent full time employment as well as who pays more. Another use of this dataset is to use it to look for geocodes.
+
+In order to get geocodes for employer address we decided to go with a distinct employer addresses in the order of most common perm application employer who also pays the most. As there can only be 2,500 address latitude and longitude can be pulled from google maps every day, we decided to create a program that keeps running sleeps, wakes up every hour and hit the google server to look for the addresses. This program will collect all the addresses and store them in a temporary file and updated them back again based on their index in a main file. This program is designed to run at multiple locations for different index ranges to collect as much address as possible.
+
+
+
 \subsection{Shortcomings}
 
 As mentioned in the previous section, because the data is not homogeneous, there are bound to be disparities. Missing data - columns which are not found across all spreadsheets - is the biggest issue. We can make assumptions when there is sparse data, but it would not be prudent to make assumptions where there is no data. For this reason, we fully disclose the absence data where necessary.
@@ -83,6 +119,16 @@ As mentioned in the previous section, because the data is not homogeneous, there
 All of the data has been entered by humans at some point, so there are likely many human-generated errors. Some of these can be seen as outliers. Particularly in the 2008 and pre-iCERT 2009 data, the wage unit is most certainly incorrect in some spots. For example, some wages are listed at \$500 per hour, but the intended unit may have been per week. It is not possible to fix this programmatically though, because there are, in fact, some jobs that pay \$500 per hour (CEOs, for instance). This data must be dealt with in one of two ways. They can either be corrected by hand inspection of outliers, or outliers can be removed completely. This results in a slight loss of fidelity. Extremely high paying jobs, such as CEO or physician may not be displayed.
 
 Another issue is the switch from U.S. Citizenship and Immigration Services Dictionary of Occupational Titles (DOT) codes in 2008 and pre-iCERT 2009 data, to the North American Industry Classification System (NAICS) codes. The DOT codes are three digits and fairly high-level, where as the NAICS codes are hierarchical, with the first two being the industry, and the specification of the job title narrowing with up to six digits. For this reason, it is difficult to get consistent job titles across years. 
+
+Perm data is comprehensive for 2015 and 2016, however the data for each year have inconsistencies both in terms of data dictionary. We have to make some educated judgements about some categories and ignore many cases with NA values. Year 2008-2014 have 25 attributes with most of them do not give us substantial information other than salary and employer name. Nature of this data made it hard to graph plots based of these categorical variables. Here is a gist of categories within this data
+
+
+53,011 - Job title based on Perm data
+46,410 - Job Title based on Work
+40,431 - Study Major
+135,955 - Employers
+213 - Citizen's from countries
+
 
 
 \section{Methods}
@@ -93,7 +139,8 @@ The numeric data provided by the H-1B and PERM datasets are mostly in the form o
 
 The data is provided as an interactive \texttt{Shiny} application, that allows the user to filter wages by various criteria. 
 
-The plots consist of distributions and and heat maps of wages across the United States.
+The plots consist of distributions and and heat maps of wages across the United States.Our objective is to have data that can be sliced by users into different factors i.e. by state, city, employer, job major, function, salary. Data products we produce from this data will help our target audience make informed decision about kinds of employment held by high skilled immigrants, who are hiring, what kind of skills employers are looking. First we will look the number of applications processed every year since 2008. Looking data every year will help see if there is an increasing or decreasing trend in number of applications processed - although there are cap on number of employment based immigration every year, still an increasing trend or maximum use of employment based immigration will give us insights. Next, we can look for immigration based on geography - where hiring is growing and which geography lacks in hiring. Not just in terms of absolute numbers rather than of normalized hiring data would give us more information. We can look at time series data on hiring by job function, job majors and university of education. Box plots, histograms, bar charts and heat maps are some of those plots we will use to draw inferences.
+
 
 \section{Results}
 
@@ -256,6 +303,151 @@ wage <- select(visas, normalized_wage, fy, case_number) %>%
   filter(normalized_wage > 500000)
 
 @
+
+<<echo=FALSE, fig.height=4, fig.width=6, warning=FALSE>>=
+options(scipen=999)
+
+library(dplyr)
+library(ggplot2)
+library(sqldf)
+library(choroplethr)
+library(choroplethrMaps)
+library(DescTools)
+library(tidyr)
+
+options(scipen=10)
+
+setwd("C:/Users/pavi/Desktop/UNO/IntroDataScience/Project/Data/testdat")
+
+dat_all <-  readRDS(file="PermData.rds")
+
+
+# Overview
+
+
+# average pay of perm applications
+df <- dat_all %>%  dplyr::group_by(YEAR, CASE_STATUS) %>% 
+  dplyr::summarize(AVG_SALARY = mean(normalized_wage, na.rm = T)) %>% 
+  mutate_each(funs(prettyNum(., big.mark=",", digits=0))) %>%
+  spread(CASE_STATUS, AVG_SALARY ) 
+
+df1 <- dat_all %>%  dplyr::group_by(YEAR) %>% 
+  dplyr::summarize(AVG_SALARY = mean(normalized_wage, na.rm = T))
+df1$AVG_SALARY = formatC(as.numeric(df1$AVG_SALARY), format="f", digits=0, big.mark=",")
+  
+df2=merge(df,df1, by.all='YEAR')
+  
+# number of perm applications
+df <- dat_all %>%  dplyr::group_by(YEAR, CASE_STATUS) %>% 
+  dplyr::summarize(APPLICATIONS = n()) %>% 
+  mutate_each(funs(prettyNum(., big.mark=",", digits=0))) %>%
+  spread(CASE_STATUS, APPLICATIONS ) 
+
+df1 <- dat_all %>%  dplyr::group_by(YEAR) %>% 
+  dplyr::summarize(APPLICATIONS = n())
+df1$APPLICATIONS = formatC(as.numeric(df1$APPLICATIONS), format="f", digits=0, big.mark=",")
+
+df2=merge(df,df1, by.all='YEAR')
+
+  
+  
+# library(knitr)
+# kable(df, format = latex, booktabs = TRUE, digits=2)
+
+
+# Grouping by study major starts here
+
+
+df = filter(dat_all, YEAR>=2015) %>% group_by(JOB_INFO_MAJOR) %>% dplyr::summarise(count_rec = n(), salary = sum(normalized_wage, na.rm = TRUE)) %>%  
+  arrange(desc(count_rec))
+
+# write.csv(distinct_df, file="Major.csv")
+
+df <- sqldf("SELECT COUNT_REC, JOB_INFO_MAJOR, salary, 
+case
+      
+            	  when (JOB_INFO_MAJOR like 'DATA SCIENCE%' OR JOB_INFO_MAJOR like 'DATA SC%' OR JOB_INFO_MAJOR like 'DATA ANALY%') then 'DATA SCIENCE'
+      when ((JOB_INFO_MAJOR like '%COMP%SC%' OR JOB_INFO_MAJOR like '%ENGG%') AND (JOB_INFO_MAJOR like '%MATH%')) then   'ENGG_MATH'
+             when ((JOB_INFO_MAJOR like '%COMP%SC%' OR JOB_INFO_MAJOR like '%ENGG%') AND (JOB_INFO_MAJOR like '%RELATE%' OR JOB_INFO_MAJOR like '%ANY%')) OR (JOB_INFO_MAJOR = 'ENGINEERING') then 'ANY ENGG'
+             when (JOB_INFO_MAJOR like 'COMPUTER SCIENCE%' OR JOB_INFO_MAJOR like 'INFORMATION TECHNOLOGY%' OR JOB_INFO_MAJOR like 'SOFTWARE ENGINEERING%' OR JOB_INFO_MAJOR like 'COMPUTER ENGINEERING%' OR JOB_INFO_MAJOR like 'COMPUTERS') then 'COMPUTER SCIENCE'
+             when (JOB_INFO_MAJOR like 'BUSINESS%' OR JOB_INFO_MAJOR like 'MANAGEMENT%' OR JOB_INFO_MAJOR = 'MBA') then 'MANAGEMENT'
+             when ((JOB_INFO_MAJOR like 'MECH%' OR JOB_INFO_MAJOR like '%ELECTR%' OR JOB_INFO_MAJOR like '%ELECTRO%' OR JOB_INFO_MAJOR like '%CHEM%' OR JOB_INFO_MAJOR like '%CIVIL%' OR JOB_INFO_MAJOR like 'PETRO%'   OR JOB_INFO_MAJOR like '%INDUS%') AND (JOB_INFO_MAJOR like '%ENGINEERING')) then 'OTHER ENGINEERING'
+             when (JOB_INFO_MAJOR like '%ACCOUNTING%' OR JOB_INFO_MAJOR like '%FINANCE%' OR JOB_INFO_MAJOR like '%ECONOMICS%' OR JOB_INFO_MAJOR LIKE 'ACCOUNTA%') then  'FINANCE'
+             when (JOB_INFO_MAJOR like 'MATHEMATICS%' OR JOB_INFO_MAJOR like 'OPERATIONS RESEARCH%') then  'MATHEMATICS'
+             when (JOB_INFO_MAJOR like 'COMPUTER SCIENCE%' OR JOB_INFO_MAJOR like 'MATHEMATICS%'  ) then  'OTHER STEM'
+             when (JOB_INFO_MAJOR like 'STATISTICS%' OR JOB_INFO_MAJOR like 'BIOSTATIS%') then 'STATISTICS'
+             when (JOB_INFO_MAJOR like 'BIOLOG%' OR JOB_INFO_MAJOR like 'CHEMISTRY%' OR JOB_INFO_MAJOR like 'PHYSICS%' OR JOB_INFO_MAJOR = 'SCIENCE' OR JOB_INFO_MAJOR LIKE 'BIOMEDICAL%') then  'SCIENCE'
+             when (JOB_INFO_MAJOR like '%EDUCATION%' OR JOB_INFO_MAJOR = 'ENGLISH') then	'EDUCATION'
+             when (JOB_INFO_MAJOR like 'MEDICINE%' OR JOB_INFO_MAJOR like 'DENTIST%' OR JOB_INFO_MAJOR like 'NURSING%' OR JOB_INFO_MAJOR like '%MEDICINE%') then  'MEDICAL'
+             when (JOB_INFO_MAJOR like 'ARTS%' OR JOB_INFO_MAJOR like 'FASHION%') then 'ARTS FASHION'
+             when (JOB_INFO_MAJOR like 'LAW%') then 'LAW'
+             when (JOB_INFO_MAJOR like 'MARKETING%') THEN 'MARKETING'
+             when (JOB_INFO_MAJOR like 'ARCHITECTURE%' OR JOB_INFO_MAJOR like '%CONSTRUCTION%') then 'ARCHITECTURE'
+             when (JOB_INFO_MAJOR like 'ENG%' OR JOB_INFO_MAJOR like 'SCI%') THEN 'OTHER STEM'
+      	  
+      
+      ELSE 'OTHER'
+      END JOB_MAJOR
+      
+      FROM df
+      WHERE JOB_INFO_MAJOR IS NOT NULL
+      ORDER BY COUNT_REC DESC
+            
+      "
+      )
+
+dat=left_join(dat_all, df, by = 'JOB_INFO_MAJOR')
+dat=subset(dat, !is.na(salary) )
+
+dat1 = df %>%  dplyr::group_by(JOB_MAJOR) %>%  
+  dplyr::summarise(mean_salary=sum(salary)/sum(count_rec), count_rec=sum(count_rec)) %>%
+  dplyr::arrange(desc(mean_salary))
+
+box_status <- ggplot(dat1, aes(x=JOB_MAJOR, y=mean_salary/1000)) 
+box_status + geom_bar(stat="identity") + coord_flip() +ylab('Mean Salary in 000\'s')
+
+box_status <- ggplot(dat1, aes(x=JOB_MAJOR, y=count_rec)) 
+box_status + geom_bar(stat="identity") + coord_flip() +ylab('Number of Perm Applied\'s')
+
+state_by_value <-
+  dat %>% group_by(JOB_INFO_WORK_STATE) %>%
+  dplyr::summarise(count = n(), mean_salary = mean(normalized_wage, na.rm = TRUE))
+
+state_by_value$region = tolower(state_by_value$JOB_INFO_WORK_STATE)
+data(state.regions)
+
+state_by_value <- merge(state_by_value, state.regions, by.x  = "region", by.y = "region")
+state_by_value$value = state_by_value$mean_salary
+state_choropleth(state_by_value, title = "Mean Salary by State",num_colors=1)
+
+state_by_value$value = state_by_value$count
+state_choropleth(state_by_value, title = "Number of Perm by State",num_colors=1)
+
+
+Desc(dat$salary, main = "Salary distribution", plotit = TRUE)
+
+Desc(dat$CASE_STATUS, plotit = T)
+
+
+# perm count by year
+
+df <- dat_all %>%  dplyr::group_by(YEAR, CASE_STATUS) %>% 
+  dplyr::summarize(AVG_SALARY = mean(normalized_wage, na.rm = T), APPLICATIONS = n()) 
+
+ggplot(df, aes(x=factor(YEAR), y=APPLICATIONS, fill=CASE_STATUS)) + 
+  geom_bar(stat="identity") +xlab("Year")+ylab("Number of Perm")
+
+df1 <- dat_all %>%  dplyr::group_by(FOREIGN_WORKER_INFO_INST) %>% filter(!is.na(FOREIGN_WORKER_INFO_INST)) %>%
+  dplyr::summarize(AVG_SALARY = mean(normalized_wage, na.rm = T), APPLICATIONS = n()) %>%
+  filter(APPLICATIONS > 10)  %>% arrange(desc(AVG_SALARY))  %>%  top_n(10, AVG_SALARY)
+
+ggplot(df1, aes(reorder(x=factor(FOREIGN_WORKER_INFO_INST), -AVG_SALARY), y=AVG_SALARY)) +
+geom_bar(stat="identity") +xlab("University of Education")+ylab("High Avg. Salary")  + coord_flip() +
+  theme(axis.text.x = element_text(angle=75, vjust=1, size=7), axis.text.y = element_text(angle=15, vjust=1, size=5))
+
+
+@
+
 
 \subsection{Offered Wage}
 \subsection{H-1B vs. PERM}
