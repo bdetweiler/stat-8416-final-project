@@ -13,11 +13,6 @@
 
 \begin{document}
 
-% Eventually we'll want to break our report into multiple files
-% This is how we can include them
-%<<child-demo, child='Child.Rnw'>>=
-%@
-
 \title {An Analysis of PERM Labor Certification and Labor Condition Applications from the United States Department of Labor}
 \author{Arunkumar Ranganathan\\ Brian Detweiler\\ Jacques Anthony}
 
@@ -53,63 +48,120 @@ library(knitr)
 
 % \newpage
 \section{Introduction}
-The U.S. Department of Labor provides data for Labor Condition Applications and PERM Labor Certifications dating back to 2008. This data contains a wealth of job market information including prevailing wage, and the wages offered by particular companies to individuals with particular qualifications. 
-In this paper we will analyze two types of visa workers in the US: H1-B and permanent visa workers.To protect foreign workers to get abused by their employers, businesses are required to pay the visa holder the higher of the prevailing wage in the company for the position or the prevailing wage for the occupation in the area of employment.The goal of this paper is to find disparities in wages for domestic and foreign workers if any exist. The H1-B visa program allows businesses to seek help from professionnals with at least a bachelor's degree in areas such as science, technology, engineering, math,and computer related occupations to name a few.From 2000 to 2005 over 50\% of the applicants were from China and India. Each year there's a cap of 65,000 applications for the H-1B visa program and additional 20,000 applications for Applicants with U.S Masters degree. Applicants whose petitons for permanent residency did not get granted must leave the US for a year but are eligible to reapply later on. The maximum length for the H1-B visa is six years. Permanent residency in the US may be granted based on different factors. First, an individual may be granted residency through the H1-B program where the employer petitions for permanent residency on his behalf. Second, people with remarkable ability in science, education, arts, business, and education such as  professors, researchers, or business executives and managers are eligible to apply for permanent residency without a labor crefication. Lastly,business investors who invest over half a million dollars in the US, employees of US foreign service posts, retired employees from international organizations, and other class of aliens may also petition for permanent residency with no labor certification. The cap for the number of applications available each year is approximately 140,000.
+The U.S. Department of Labor provides data for Labor Condition Applications and PERM Labor Certifications dating back to 2008. This data contains a wealth of job market information including prevailing wage, and the wages offered by particular companies to individuals with particular qualifications.
+
+Foreign workers can work legally in the U.S. under temporary or immigrant visas. To employ foreign workers legally in the U.S., employers must submit requests to the Office of Foreign Labor Certification.
+This process keeps borders secure, while protecting foreign workers from unfair treatment by employers. 
+Businesses are required to pay the visa holder the higher of the prevailing wage for the position or the prevailing wage for the occupation in the geographic region of employment.
+
+Here, we look for disparities in wages for domestic and foreign workers if any exist. 
+The H-1B visa program allows businesses to hire skilled professionals with at least a bachelor's degree in areas of specialization.
+
+% XXX: This stat seems to come out of nowhere. Do we have a reason for it? Do we have a source to cite?
+% From 2000 to 2005 over 50\% of the applicants were from China and India. 
+
+Each year the federal government grants a maximum of 65,000 applications for the H-1B visa program and additional 20,000 applications for applicants with at least a U.S. master's degree. Permanent applications are limited to 140,000 per year.
+
+Applicants whose petitons are denied for permanent residency must leave the U.S. for one year but are eligible to reapply later on.
+
+The maximum length for the H-1B visa is six years. For permanent residency, an individual under the H-1B program may be sponsored by the employer. Workers with remarkable ability in science, education, arts, business, and education such as professors, researchers, or business executives and managers are eligible to apply for permanent residency without a labor crefication.  
+Some special exceptions to these rules include business investors who invest over half a million dollars in the US, employees of US foreign service posts, retired employees from international organizations, and other classes of foreigners may also petition for permanent residency with no labor certification. 
 
 \subsection{Document reproducibility}
-The entirety of this project is reproducible using R (version 3.1 and above) with Knitr package for R. Anyone with R version 3.1 with Knitr can unweave the document and reproduce all the text code and embedded R charts. 
+% Note: ColorPlethr is not available for R < 3.3
+The entirety of this project is reproducible using \textsf{R} (version 3.3 and above) with the \texttt{Knitr} package. All code, including this document, is available through GitHub. \cite{GitHub}
 
 \section{About the data}
 The Office of Foreign Labor Certification, under the Department of Labor provides data for PERM Labor Certification (LC) applications and Labor Condition Applications (LCA) via XLSX files. Data is available from 2008 onward. The iCERT system was implemented in 2009, so there are two files for 2009. Each file is structured similar to the others, but there are differences which must be addressed.
 
+PERM (Program Electronic Review Management) data is available from 2008 to the present. Years 2015 and 2016 have over 120 attributes while 2008 through 2014 have 27-30 attributes. 
+We plan on using 27 attributes common across 2008-2016, as well as an additional 14 attributes found only in 2015-2016. These may be useful for limited analysis. 
+In this data, we have employer and employee details, job function, salary, university, job city, number of years of experience, country of citizenship, and industry.
+
 \subsection{H-1B Data preparation}
 
-The H-1B data is about 75\% larger than the PERM data, and spreadsheet programs do not handle these well, so the first task was to export these to CSV formatted files so that they could be handled with better tools. When exporting, they were also given more uniform file names. Once in CSV, we needed to identify common columns across all spreadsheets. The difficulty here, is that the columns do not have the same names across spreadsheets, even though they may be holding the same data.
+The H-1B data is about 75\% larger than the PERM data, and spreadsheet programs do not handle these well, so the first task was to export these to CSV formatted files so that they could be handled with better tools. When exporting, they were also given more uniform file names in the form of "H-1B\_yyyy.csv" where "yyyy" is the year of the data. The one exception here is the 2009 iCERT data, which was named "H-1B\_2009\_icert.csv". Once in CSV format, we needed to identify common columns across all spreadsheets. The difficulty here, is that the columns do not have the same names across spreadsheets, even though they may be holding the same data.
 
 Using the UNIX tool \texttt{head -n 10 *.csv > headers.txt}, we took the first ten rows of each file and put them into a separate file. Each of the CSVs first ten rows were then copied and pasted into another spreadsheet, and we undertook a manual effort to match columns of the same identity. We also discarded some excess information that we deemed to be unnecessary for our purposes. 
 
 It is also important to note that there was not always a match for the columns we had selected. For instance, we found some interesting information regarding the attorney used by the employer to file the H-1B application. This was only introduced in the 2015 and 2016 datasets, however, so prior years would have no data for this.
 
-After determining the standard columns, we wrote an import script in \textsf{R} that made use of the
-\texttt{data.table::fread} function. This allowed us to not only quickly read in the file, but also select only the columns of interest, and rename them to the standard naming convention upon read. 
+After determining the standard columns, we wrote an import script in \textsf{R} that made use of the function
+\texttt{data.table::fread}. This allowed us to not only quickly read in the file, but also select only the columns of interest, and rename them to the standard naming convention upon read. 
+  
 
 Once the data was read into individual data frames, additional cleaning rules were applied. In some years, wage data contained invalid numeric characters such as dollar signs or a range of wages in a single column. To get around this, dollar signs were removed before converting to numeric, and ranges were split into a \textit{from} and a \textit{to} column. Ultimately, all wages were transformed into ranges. If there was no range for the wage, then the wage itself was used as the range. 
 
 Another normalization task was the wage unit. Some wages were represented as yearly salary, some as hourly, and others as monthly, weekly, and bi-weekly. There can be subtle differences in each type of pay, but these were normalized according to a yearly salary. Hourly wage was multiplied by 40 hours a week and 52 weeks a year. Monthly wage was multiplied by 12, weekly by 52, and bi-weekly by 26. This allows all wages to be treated roughly on the same scale.
 
-\subsection{Perm Data preparation}
+With the exception of exporting data to CSV format, the rest of the steps have been combined into a single script, \texttt{csv\_manipulation.R}. \cite{GitHub}
 
-Perm data is available from year 2008 to current. Year 2015 and 2016 have over 120 attributes while 2008-2014 have 27-30 attributes, we plan on using 27 attributes common from 2008-16, while additional 14 attributes only on 2015-16 is useful for limited analysis. We can find information such as employer details, employee details, job function, salary, university, job city, number of years of experience, country of citizenship, and industry.
 
-Steps:
-Download PERMFY2008.xlsx to PERMDisclosureDataFY16.xlsx under disclosure data from department of labor website, under disclosure data. Set working directory as downloaded files directory. Install required libraries before running this script
+\subsection{PERM Data preparation}
 
-Perm data downloaded from department of foreign labor is in .xlsx form. R-Program that loads this data uses two libraries 1) xlsx and 2) dplyr. We have loaded this data in R - cleaned them, gathered only required columns and created .rds file. In this process of creating final file, we went through all the files and got only columns that are essential for our data analysis. Multiple .xlsx files are initially filtered with select 41 columns and merged them all back again into one large file with 622,637 records. In short, two-step process to get a clean perm data, first step is to download data from DOL, then, run code to parse the file create a final output - with no intermediate manual steps required. We will discuss what and how we cleaned the data next. 
-In total there were 9 files downloaded, with each files ranging from 40,000 to 90,000 records. Most column names from 2008-2014 were same with minor differences, while 2015-16 columns were similar. Column names are standardized to 2016 for posterity - hoping next years' data would be in the same format as 2016. To standardize all column, we have removed any space between columns to underscore and created all column names in upper case. First step in preparing data, we selected all the relevant columns and filled in not available columns as NA's (such as employer address 2 in 2008 year data).  Subsetting these columns within a function is created in order to call the function to create final subset for each year. Once we have all the data available for each year, final final is created with raw data without standardizing or further cleaning. This dataset can be used by anyone looking for perm data and can standardize based on their need.
+% I think we can assume the user has downloaded the data
+% We'll have links to the DoL website in our citations
+%Download PERMFY2008.xlsx to PERMDisclosureDataFY16.xlsx under disclosure data from department of labor website, under disclosure data. Set working directory as downloaded files directory. Install required libraries before running this script
+
+
+PERM data from the Department of Foreign Labor Certification is in XLSX format. We can read and manipulate these using the \texttt{xlsx} and \texttt{dplyr} packages.
+
+%
+% XXX: We need your scripts!
+%
+  
+Transforming all character variables to upper case deemed as necessary to avoid duplicity or incorrectness when performing data manipulation.
+  
+In total there were 9 files downloaded, with each file ranging from 40,000 to 90,000 records. 
+
+Most column names from 2008-2014 were the same with minor differences, while 2015-2016 had a different format, but were similar to each other.
+Column names are standardized to the 2016 version for posterity and the assumption that in the short term future, the columns will remain the same. 
+To standardize all columns, we have replaced spaces in column names with underscores and created all column names in upper case.
+The first step in preparing data was to select all the relevant columns and fill empty columns wth \texttt{NA}s. 
+
+% I don't understand this:
+% Subsetting these columns within a function is created in order to call the function to create final subset for each year. 
+
+Once we have all the data available for each year, a final version is created with the raw data without standardizing or further cleaning.
+This dataset can be used by anyone looking for this PERM data and can standardize based on their needs.
+
+Once we loaded and cleaned the data, we selected only the required columns and exported this as an RDS file. In this process of creating final file, we further reduced the columns and kept only the columns that are essential for our data analysis. 
+
+Multiple XLSX files are initially filtered with the selected 41 columns and merged back into one large file with 622,637 records.
 
 Data cleaning specific to this project is also required not just for standardizing data but also to have the data in a specific format.
 
-During the process of creating final file, most columns are read as text and few columns such as decision_date are read as date, while salary information are read as numeric. Decision date is first transformed to YYYY-MM-DD format for consistency within our database.
+During the process of creating final file, most columns are read as text and a few columns such as 'decision\_date' are read as date, while salary information was read as numeric. Decision date is first transformed to YYYY-MM-DD format for consistency within our database.
 
 Transforming all character variables to upper case deemed as necessary to avoid duplicity or incorrectness when performing data manipulation.
 
-Wage information is marked in unit as weekly, monthly, bi-weekly, and annually. This wage units weren't consistent in the file - so we have to make all the weekly to 'WK', monthly to' MTH' and bi-weekly to 'BIWK' and yearly to 'YR' across file
+Wage information is marked in unit as weekly, monthly, bi-weekly, and annually. This wage units weren't consistent in the file - so we have to make all the weekly to 'WK', monthly to' MTH' and bi-weekly to 'BIWK' and yearly to 'YR' across data.
 
-Wage information was normalized to create a new column just with annual salary - i.e. weekly, hourly, monthly, and bi-weekly salaries are transformed to yearly. Range of salary of salary is also normalized in this step.
+Wage information was normalized to create a new column just with annual salary - i.e. weekly, hourly, monthly, and bi-weekly salaries are transformed to yearly. Range of salary is also normalized in this step.
 
 Employer zip codes are trimmed to 5 digits to keep all the zip codes at the same level of depth
 
-Employment state data is both at abbreviated and expanded level. We need to standardize either as a two digit code or expanded for consistency - for this exercise state names are created at expanded level for all 50 US states as well as US territories
+Employment state data is both at abbreviated and expanded level. 
+We needed to standardize either as a two digit code or expanded for consistency. For this exercise state names are created at the expanded level for all 50 US states as well as US territories.
 
-Next we need to create a unique id to tie all the information back together as well as to create index in the future - row number is created as unique id 
+Next we needed to create a unique id to tie all the information back together as well as to create index in the future, so row number was created as unique id.
 
-This cleaned data is saved as an .rds file before next step.
-
-Another .rds file (PermEmpMapsdat.rds) - one is with summarized employer name address, city, state and zip codes order by number or perm applications processed and by their mean salary. This dataset would give us which employer sponsors most employees for permanent full time employment as well as who pays more. Another use of this dataset is to use it to look for geocodes.
-
-In order to get geocodes for employer address we decided to go with a distinct employer addresses in the order of most common perm application employer who also pays the most. As there can only be 2,500 address latitude and longitude can be pulled from google maps every day, we decided to create a program that keeps running sleeps, wakes up every hour and hit the google server to look for the addresses. This program will collect all the addresses and store them in a temporary file and updated them back again based on their index in a main file. This program is designed to run at multiple locations for different index ranges to collect as much address as possible.
+This cleaned data is saved as an RDS file before the next step.
 
 
+\subsection{Geolocation data}
+
+Another RDS file (PermEmpMapsdat.rds) is created with summarized employer name address, city, state and zip codes order by number or perm applications processed and by their mean salary.
+This dataset would give us which employer sponsors most employees for permanent full time employment as well as who pays more. 
+Another use of this dataset is in geocoding. 
+
+In order to get geocodes for employer address we decided to go with a distinct employer addresses in the order of most common PERM application employer who also pays the highest wages.
+
+% I noticed this approach did not work - After 24 hours, I still got rate limit reached. I had to restart the script.
+% Also, since we know it is a 24 hour limit, why not make it sleep for 24 hours?
+As we are restricted to 2,500 geocode requests from Google Maps in a 24 hour period, we decided to create a program that continuously runs until the rate limit is encountered, sleeps, and wakes up every hour trying to hit the google server to look for the addresses.
+
+This program will collect all the addresses and store them in a temporary file and updat them again based on their index in a main file. This program is designed to run at multiple locations for different index ranges to collect as much address as possible.
 
 \subsection{Shortcomings}
 
@@ -119,15 +171,20 @@ All of the data has been entered by humans at some point, so there are likely ma
 
 Another issue is the switch from U.S. Citizenship and Immigration Services Dictionary of Occupational Titles (DOT) codes in 2008 and pre-iCERT 2009 data, to the North American Industry Classification System (NAICS) codes. The DOT codes are three digits and fairly high-level, where as the NAICS codes are hierarchical, with the first two being the industry, and the specification of the job title narrowing with up to six digits. For this reason, it is difficult to get consistent job titles across years. 
 
-Perm data is comprehensive for 2015 and 2016, however the data for each year have inconsistencies both in terms of data dictionary. We have to make some educated judgements about some categories and ignore many cases with NA values. Year 2008-2014 have 25 attributes with most of them do not give us substantial information other than salary and employer name. Nature of this data made it hard to graph plots based of these categorical variables. Here is a gist of categories within this data
+PERM data is comprehensive for 2015 and 2016, however the data for each year have inconsistencies. We had to make some educated judgements about some categories and ignore many cases with empty values. 
+Years 2008-2014 have 25 attributes, but most of them do not give us substantial information other than salary and employer name.
+The nature of this data made it hard to graph plots based of these categorical variables. 
+Here is a sample of the categorical data:
 
-
-53,011 - Job title based on Perm data
-46,410 - Job Title based on Work
-40,431 - Study Major
-135,955 - Employers
-213 - Citizen's from countries
-
+\begin{center}
+\begin{tabular}{ r l }
+  53,011 & Job title based on Perm data \\
+  46,410 & Job Title based on Work \\
+  40,431 & Study Major \\
+  135,955 & Employers \\
+  213 & Countries in the "other" category \\
+\end{tabular}
+\end{center}
 
 
 \section{Methods}
@@ -138,7 +195,17 @@ The numeric data provided by the H-1B and PERM datasets are mostly in the form o
 
 The data is provided as an interactive \texttt{Shiny} application, that allows the user to filter wages by various criteria. 
 
-The plots consist of distributions and and heat maps of wages across the United States.Our objective is to have data that can be sliced by users into different factors i.e. by state, city, employer, job major, function, salary. Data products we produce from this data will help our target audience make informed decision about kinds of employment held by high skilled immigrants, who are hiring, what kind of skills employers are looking. First we will look the number of applications processed every year since 2008. Looking data every year will help see if there is an increasing or decreasing trend in number of applications processed - although there are cap on number of employment based immigration every year, still an increasing trend or maximum use of employment based immigration will give us insights. Next, we can look for immigration based on geography - where hiring is growing and which geography lacks in hiring. Not just in terms of absolute numbers rather than of normalized hiring data would give us more information. We can look at time series data on hiring by job function, job majors and university of education. Box plots, histograms, bar charts and heat maps are some of those plots we will use to draw inferences.
+The plots consist of distributions and and heat maps of wages across the United States.
+Our objective is to have data that can be sliced by users into different factors; by state, city, employer, job major, function, salary. 
+The data products we produce will help our target audience make informed decision about kinds of employment held by high skilled immigrants, what employers are hiring, and what kinds of skills employers are looking for.
+
+First we will look the number of applications processed since 2008.
+Using these statistics, we can gague an increasing or decreaseing trend in the number of applications processed.
+Although there are caps on the annual number of employment based immigrations, an increasing trend or maximum use of employment based immigration would provide insight.
+
+Next, we can look for immigration based on geography. In what regions are employers hiring? 
+We can also look at time series data on hiring by job function, job majors and university of education. 
+Box plots, histograms, bar charts and heat maps are some of those plots we will use to draw inferences.
 
 
 \section{Results}
@@ -170,7 +237,7 @@ ggplot(visas.by.status, aes(x = status, y = tot))  +
 
 @
 
-Clearly, we can see huge outliers in 2010 and 2013 that don't seem to fit the data. These could be explained as outliers. Upon investigation, it is safe to say that all H-1B applications requesting over 1,000 total workers are either denied or withdrawn.
+Clearly, we can see huge outliers in 2010 and 2013 that don't seem to fit the data. Upon investigation, it is safe to say that all H-1B applications requesting over 1,000 total workers are either denied or withdrawn. These can be safely ignored.
 
 <<echo=FALSE>>=
 # In case we want to investigate the outliers
@@ -189,9 +256,9 @@ outliers.by.status <- select(visas, fy, total_workers, status) %>%
 kable(outliers.by.status, format = "latex", caption = "Applications requesting over 1000 workers", booktabs = TRUE)
 @
 
-Once we remove all requests for more than 1,000 workers, we can start to see a pattern. The number of denied and withdrawn applications remains fairly constant, but the number of certified workers shows a steady rise after 2010, most likely due to a strengthening economy and returning jobs. 
+Once we remove all requests for more than 1,000 workers, we can start to see a pattern. The number of denied and withdrawn applications remains fairly constant, but the number of certified workers shows a steady rise after 2010, most likely due to a strengthening economy and returning jobs. \cite{BLS}
 
-<<echo=FALSE, warning=FALSE , fig.height=4, fig.width=6>>=
+<<echo=FALSE, warning=FALSE, fig.height=4, fig.width=6>>=
 
 # Everything over 1000 workers were either denied or withdrawn. We can ignore those.
    
@@ -496,12 +563,31 @@ We are seeing outliers in the wage offered both in H1B and Perm. How we deal wit
 
 @
 
-\begin{thebibliography}{9}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                     BIBLIOGRAPHY
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{thebibliography}{3}
+
+
 
 \bibitem{DoL}
   U.S. Department of Labor,
   Office of Foreign Labor Certification Disclosure Data,
   \href{https://www.foreignlaborcert.doleta.gov/performancedata.cfm}{https://www.foreignlaborcert.doleta.gov/performancedata.cfm}
+  
+\bibitem{GitHub}
+  GitHub, stat-8416-final-project,
+  Brian Detweiler,
+  \href{https://github.com/bdetweiler/stat-8416-final-project}{https://github.com/bdetweiler/stat-8416-final-project}
+
+\bibitem{BLS}
+  Bureau of Labor Statistics
+  \href{http://data.bls.gov/timeseries/CES0000000001?output\_view=net\_1mth}{http://data.bls.gov/timeseries/CES0000000001?output\_view=net\_1mth}
+  
+  
+  
 \end{thebibliography}
+
 
 \end{document}
