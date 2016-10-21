@@ -592,8 +592,9 @@ We are seeing outliers in the wage offered both in H1B and Perm. How we deal wit
 \bibitem{BLS}
   Bureau of Labor Statistics
   \href{http://data.bls.gov/timeseries/CES0000000001?output\_view=net\_1mth}{http://data.bls.gov/timeseries/CES0000000001?output\_view=net\_1mth}
-  
-  
+  http://www.nber.org/papers/w15768.pdf
+  https://www.uscis.gov/working-united-states/temporary-workers/h-1b-specialty-occupations-dod-cooperative-research-and-development-project-workers-and-fashion-models
+  https://www.uscis.gov/working-united-states/permanent-workers
   
 \end{thebibliography}
 
