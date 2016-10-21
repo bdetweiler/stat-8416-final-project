@@ -44,6 +44,13 @@ library(mgcv)
 library(bit64)
 library(ggplot2)
 library(knitr)
+library(sqldf)
+# XXX: Need to get this installed
+#library(choroplethr)
+library(choroplethrMaps)
+library(DescTools)
+library(tidyr)
+
 @
 
 % \newpage
@@ -68,8 +75,7 @@ The maximum length for the H-1B visa is six years. For permanent residency, an i
 Some special exceptions to these rules include business investors who invest over half a million dollars in the US, employees of US foreign service posts, retired employees from international organizations, and other classes of foreigners may also petition for permanent residency with no labor certification. 
 
 \subsection{Document reproducibility}
-% Note: ColorPlethr is not available for R < 3.3
-The entirety of this project is reproducible using \textsf{R} (version 3.3 and above) with the \texttt{Knitr} package. All code, including this document, is available through GitHub. \cite{GitHub}
+The entirety of this project is reproducible using \textsf{R} (version 3.2 and above) with the \texttt{Knitr} package. All code, including this document, is available through GitHub. \cite{GitHub}
 
 \section{About the data}
 The Office of Foreign Labor Certification, under the Department of Labor provides data for PERM Labor Certification (LC) applications and Labor Condition Applications (LCA) via XLSX files. Data is available from 2008 onward. The iCERT system was implemented in 2009, so there are two files for 2009. Each file is structured similar to the others, but there are differences which must be addressed.
@@ -210,8 +216,8 @@ Box plots, histograms, bar charts and heat maps are some of those plots we will 
 
 \section{Results}
 
-
-\subsection{Overview}
+% If we can generalize here, then we'll have an overview
+% \subsection{Overview}
 
 \subsection{Prevailing Wage}
 
@@ -262,9 +268,10 @@ Once we remove all requests for more than 1,000 workers, we can start to see a p
 
 # Everything over 1000 workers were either denied or withdrawn. We can ignore those.
    
-visas.by.status <- select(visas, fy, total_workers, status) %>%
+visas.by.status <- select(visas, fy, total_workers, status, visa_class) %>%
     filter(!is.na(status)) %>%
     filter(status != "") %>%
+    filter(total_workers > 1) %>%
     filter(total_workers < 1000) %>%
     group_by(status, fy) %>%
     summarise(tot = sum(total_workers))
@@ -299,13 +306,46 @@ visas.by.status <- select(visas, fy, total_workers, status) %>%
     group_by(status, fy) %>%
     summarise(tot = sum(total_workers))
 
-visas.by.status <- rbind(as.data.frame(visas.by.status), job.stats)
+visas.by.status.vs.jobs <- rbind(as.data.frame(visas.by.status), job.stats)
 
-ggplot(visas.by.status, aes(x = status, y = tot, fill = status))  +
+ggplot(visas.by.status.vs.jobs, aes(x = status, y = tot, fill = status))  +
   geom_bar(stat = "identity") +
   scale_x_discrete(labels=NULL) +
   facet_grid(. ~ fy) +
-  labs(title = "Number of workers by application status vs. U.S. job market, 2008 - 2016", x = "Certified H-1Bs vs. U.S. Job Market")
+  labs(title = "Workers by application status vs. U.S. job market", x = "Certified H-1Bs vs. U.S. Job Market")
+
+fy <- 2007
+#jobs.count <- job.stats$tot[which(job.stats$fy > fy)]
+visas.count <- visas.by.status$tot[which(visas.by.status$fy > fy)]
+visas.year <- visas.by.status$fy[which(visas.by.status$fy > fy)]
+
+#plot(x = visas.year, y = jobs.count, col="blue", ylim = c(0, 3500000))
+plot(x = visas.year, visas.count, col="red")
+
+visas.lm <- lm(visas.count ~ visas.year)
+#jobs.lm <- lm(jobs.count ~ visas.year)
+abline(visas.lm, col="red")
+#abline(jobs.lm, col="blue")
+
+# corr.coef <- cov(x = visas.count, y = jobs.count) / (sd(visas.count) * sd(jobs.count))
+visas.lm.summary <- summary(visas.lm)
+#jobs.lm.summary <- summary(jobs.lm)
+visas.lm.pval <- visas.lm.summary$coefficients[2, "Pr(>|t|)"]
+#jobs.lm.pval <- jobs.lm.summary$coefficients[2, "Pr(>|t|)"]
+#visas.lm.pval
+visas.lm.rsq <- visas.lm.summary$r.squared
+next.year <- data.frame(visas.year = 2017)
+next.year.pred <- predict(visas.lm, next.year, interval="predict")[1, 'fit']
+@
+
+The demand for new temporary worker jobs year over year suggests a strong linear relation with $\rho = $ \Sexpr{visas.lm.rsq} and a $p$-value of \Sexpr{visas.lm.pval}. We could estimate that if things continue on this course, in 2017 we should expect to see \Sexpr{round(next.year.pred)} temporary foreign worker jobs added.
+
+% XXX: Not sure how much the correlation matters. It isn't super strong. To be determined...
+%After 2009, the certified visa workers count shows a correlation coefficient of \Sexp{corr.coef}, which suggests some correlation. The U.S. jobs line, does not suggest a trend, with a $p$-value of 
+
+
+
+<<echo=FALSE, warning=FALSE, fig.height=4, fig.width=6>>=
 
 # We'll count the total number of applications that were denied (as opposed to the total workers requested)
 # visas.by.status <- select(visas, fy, total_workers, status) %>%
@@ -358,8 +398,11 @@ ggplot(visas.by.status, aes(x = status, y = tot, fill = status))  +
 # ggplot(visas.by.status, aes(x = fy))  +
 #   geom_bar(stat = "bin")
 
+@
 
 
+
+<<echo=FALSE, warning=FALSE, fig.height=4, fig.width=6>>=
 hist(visas[which(visas$naics_title == 'Computer Systems Design Services'),]$normalized_wage, breaks=500, xlim = c(0, 500000))
 
 hist(visas[which(visas$naics_title == 'Parole Offices and Probation Offices'),]$normalized_wage, breaks=500, xlim=c(0, 500000))
@@ -371,14 +414,6 @@ wage <- select(visas, normalized_wage, fy, case_number) %>%
 @
 
 <<echo=FALSE, fig.height=4, fig.width=6, warning=FALSE, message=F>>=
-
-library(dplyr)
-library(ggplot2)
-library(sqldf)
-library(choroplethr)
-library(choroplethrMaps)
-library(DescTools)
-library(tidyr)
 
 options(scipen=10)
 
