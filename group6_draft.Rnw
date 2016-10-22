@@ -1,0 +1,571 @@
+\documentclass{article}
+
+%\usepackage[margin=1in]{geometry}   % set up margins
+\usepackage[vmargin=1in,hmargin=1in]{geometry}
+\usepackage{tikz}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{titlesec}
+
+\setcounter{secnumdepth}{4}
+
+\usepackage[backend=bibtex]{biblatex}
+
+\begin{document}
+
+\title {An Analysis of PERM Labor Certification and Labor Condition Applications from the United States Department of Labor}
+\author{Arunkumar Ranganathan\\ Brian Detweiler\\ Jacques Anthony}
+
+\maketitle
+
+\begin{abstract}
+
+Foreign born workers make up 17\% of the United States workforce. In 2014, nearly one million foreign nationals became lawful permanent residents in the United States. Of those one million, 140,000 came through visas which are allocated to employment based residency. Where are these workers, and what do the demographics look like? How does each company's compensation measure up? Here, we use statistical analysis and business analytics to examine visa application data from the U.S. Department of Labor from 2008 to 2016. We intend to create an interactive data product that will make this publicly available information more accessible to the students who are entering the workforce, as well as to US citizens and permanent residents. This will empower them to competitively position themselves in the job market by making more informed decisions.
+
+% Not sure if we need to cite sources in the abstract, but here they are if we need them:
+% 17% of workforce: 
+% http://www.migrationpolicy.org/article/frequently-requested-statistics-immigrants-and-immigration-united-states
+% 140,000 visas:
+% https://www.fas.org/sgp/crs/homesec/R42048.pdf
+% Even though this set of data provides insightful information about the population of foreign workers in America, we lack information about non US citizens that legally married US citizens and thus not needing a work visa. 
+
+% Immigration statistics
+%https://www.us-immigration.com/how-many-immigration-applications-filed-each-year/
+\end{abstract}
+
+
+\pagenumbering{arabic} % reset numbering to normal for the main content
+
+<<echo=FALSE, warning=FALSE, error=FALSE, message=FALSE>>=
+# Include necessary libraries
+library(data.table)
+library(dplyr)
+library(mgcv)
+library(bit64)
+library(ggplot2)
+library(knitr)
+library(sqldf)
+library(choroplethr)
+library(choroplethrMaps)
+library(DescTools)
+library(tidyr)
+library(tcltk)
+
+# convenience function to format currency
+digits.format <- function(x, sci.digits = 2) { 
+  return(format(x, big.mark=",", digits = 2, nsmall = sci.digits))
+}
+
+# 
+currency.format <- function(x, cents = FALSE) { 
+  dig <- 0
+  if (cents) {
+    dig <- 2
+  } 
+  
+  return(paste("\\$", format(x, big.mark=",", digits = 2, nsmall = dig), sep=""))
+}
+
+@
+
+% \newpage
+\section{Introduction}
+The U.S. Department of Labor provides data for Labor Condition Applications and PERM Labor Certifications dating back to 2008. This data contains a wealth of job market information including prevailing wage, and the wages offered by particular companies to individuals with particular qualifications.
+
+Foreign workers can work legally in the U.S. under temporary or immigrant visas. To employ foreign workers legally in the U.S., employers must submit requests to the Office of Foreign Labor Certification.
+This process keeps borders secure, while protecting foreign workers from unfair treatment by employers. 
+Businesses are required to pay the visa holder the higher of the prevailing wage for the position or the prevailing wage for the occupation in the geographic region of employment.
+
+The H-1B visa program allows businesses to hire skilled professionals with at least a bachelor's degree in areas of specialization. H-1B is the largest of the Labor Condition Application (LCA) programs, which also consists of H-1B1 for Singaporean and Chilean workers, and the E-3 program for Australian workers. 
+Each year the federal government grants a maximum of 65,000 applications for the H-1B visa program and additional 20,000 applications for applicants with at least a U.S. master's degree. Permanent applications are limited to 140,000 per year.
+Applicants whose petitions are denied for permanent residency must leave the U.S. for one year but are eligible to reapply later on.
+
+The maximum length for the H-1B visa is six years. For permanent residency, an individual under the H-1B program may be sponsored by the employer. Workers with remarkable ability in science, education, arts, business, and education - professors, researchers, or business executives - are eligible to apply for permanent residency without a labor certification.  
+Some special exceptions to these rules include business investors who invest over half a million dollars in the US, employees of US foreign service posts, retired employees from international organizations, and other classes of foreigners may also petition for permanent residency with no labor certification. 
+
+Here, we look for disparities in wages for domestic and foreign workers if any exist, expanding on the work of Mukhopadhyay and Oxborrow, which investigated data from 1999 - 2008. \cite{Greencard}
+
+\subsection{Document reproducibility}
+The entirety of this project is reproducible using \textsf{R} (version 3.2 and above) with the \texttt{Knitr} package. All code, including this document, is available through GitHub. \cite{GitHub}
+
+\section{About the data}
+The Office of Foreign Labor Certification, under the Department of Labor provides data for PERM Labor Certification (LC) applications and Labor Condition Applications (LCA) via XLSX files. Data is available from 2008 onward. The iCERT system was implemented in 2009, so there are two files for LCA 2009. Each file is structured similar to the others, but there are differences which must be addressed.
+
+PERM (Program Electronic Review Management) data is available from 2008 to the present. Years 2015 and 2016 have over 120 attributes while 2008 through 2014 have 27-30 attributes. 
+For our purposes, we will be using 27 attributes common across 2008-2016, as well as an additional 14 attributes found only in 2015-2016, which may be useful for limited analysis. 
+Some of the fields include employer and employee details, job function, salary, university, job city, number of years of experience, country of citizenship, and industry.
+
+\subsection{H-1B Data preparation} 
+
+The H-1B \footnote{It should be noted that the LCA data is referred to generically throughout this paper as H-1B data, although it also includes the H-1B1 and E-3 programs.} data is about 75\% larger than the PERM data, and spreadsheet programs do not handle these well, so the first task was to export these to CSV formatted files so that they could be handled with better tools. When exporting, they were also given more uniform file names in the form of "H-1B\_yyyy.csv" where "yyyy" is the year of the data. The one exception here is the 2009 iCERT data, which was named "H-1B\_2009\_icert.csv". Once in CSV format, we needed to identify common columns across all spreadsheets. The difficulty here, is that the columns do not have the same names across spreadsheets, even though they may be holding the same data.
+
+Using the UNIX tool \texttt{head -n 10 *.csv > headers.txt}, we took the first ten rows of each file and put them into a separate file. Each of the CSVs first ten rows were then copied and pasted into another spreadsheet, and we undertook a manual effort to match columns of the same identity. We also discarded some excess information that we deemed to be unnecessary for our purposes. 
+
+It is also important to note that there was not always a match for the columns we had selected. For instance, we found some interesting information regarding the attorney used by the employer to file the H-1B application. This was only introduced in the 2015 and 2016 datasets, however, so prior years would have no data for this.
+
+After determining the standard columns, we wrote an import script in \textsf{R} that made use of the function
+\texttt{data.table::fread}. This allowed us to not only quickly read in the file, but also select only the columns of interest, and rename them to the standard naming convention upon read. 
+  
+
+Once the data was read into individual data frames, additional cleaning rules were applied. In some years, wage data contained invalid numeric characters such as dollar signs or a range of wages in a single column. To get around this, dollar signs were removed before converting to numeric, and ranges were split into a \textit{from} and a \textit{to} column. Ultimately, all wages were transformed into ranges. If there was no range for the wage, then the wage itself was used as the range. 
+
+Another normalization task was the wage unit. Some wages were represented as yearly salary, some as hourly, and others as monthly, weekly, and bi-weekly. There can be subtle differences in each type of pay, but these were normalized according to a yearly salary. Hourly wage was multiplied by 40 hours a week and 52 weeks a year. Monthly wage was multiplied by 12, weekly by 52, and bi-weekly by 26. This allows all wages to be treated roughly on the same scale.
+
+With the exception of exporting data to CSV format, the rest of the steps have been combined into a single script, \texttt{csv\_manipulation.R}. \cite{GitHub}
+
+
+\subsection{PERM Data preparation}
+
+% I think we can assume the user has downloaded the data
+% We'll have links to the DoL website in our citations
+%Download PERMFY2008.xlsx to PERMDisclosureDataFY16.xlsx under disclosure data from department of labor website, under disclosure data. Set working directory as downloaded files directory. Install required libraries before running this script
+
+
+PERM data from the Department of Foreign Labor Certification is in XLSX format. We can read and manipulate these using the \texttt{xlsx} and \texttt{dplyr} packages.
+
+%
+% XXX: We need your scripts!
+%
+  
+Transforming all character variables to upper case deemed as necessary to avoid duplicity or incorrectness when performing data manipulation.
+  
+In total there were 9 files downloaded, with each file ranging from 40,000 to 90,000 records. 
+
+Most column names from 2008-2014 were the same with minor differences, while 2015-2016 had a different format, but were similar to each other.
+Column names are standardized to the 2016 version for posterity and the assumption that in the short term future, the columns will remain the same. 
+To standardize all columns, we have replaced spaces in column names with underscores and created all column names in upper case.
+The first step in preparing data was to select all the relevant columns and fill empty columns with \texttt{NA}s. 
+
+% I don't understand this:
+% Subsetting these columns within a function is created in order to call the function to create final subset for each year. 
+
+Once we have all the data available for each year, a final version is created with the raw data without standardizing or further cleaning.
+This dataset can be used by anyone looking for this PERM data and can standardize based on their needs.
+
+Once we loaded and cleaned the data, we selected only the required columns and exported this as an RDS file. In this process of creating final file, we further reduced the columns and kept only the columns that are essential for our data analysis. 
+
+Multiple XLSX files are initially filtered with the selected 41 columns and merged back into one large file with 622,637 records.
+
+Data cleaning specific to this project is also required not just for standardizing data but also to have the data in a specific format.
+
+During the process of creating final file, most columns are read as text and a few columns such as 'decision\_date' are read as date, while salary information was read as numeric. Decision date is first transformed to YYYY-MM-DD format for consistency within our database.
+
+As with the H-1B data, wage units were converted to a unified format and wages were normalized according to an annual rate and added to a new column just with annual salary. The range of salary was also normalized in this step. 
+Employer zip codes were trimmed to 5 digits to keep all the zip codes at the same level of depth. 
+Employment state data was in abbreviated form as well as expanded form, so we needed to standardized to the expanded level for all 50 U.S. states as well as U.S. territories. 
+Finally, a unique row ID was added to each row.
+
+This cleaned data was saved as an RDS file before moving on to exploratory data analysis.
+
+\subsection{Geolocation data}
+
+Another RDS file (PermEmpMapsdat.rds) was created with summarized employer name address, city, state and zip codes order by number or perm applications processed and by their mean salary.
+This dataset would give us which employer sponsors most employees for permanent full time employment as well as who pays more. 
+Another use of this dataset is in geocoding. 
+
+In order to get geocodes for employer address we decided to go with a distinct employer addresses in the order of most common PERM application employer who also pays the highest wages.
+
+% I noticed this approach did not work - After 24 hours, I still got rate limit reached. I had to restart the script.
+% Also, since we know it is a 24 hour limit, why not make it sleep for 24 hours?
+As we are restricted to 2,500 geocode requests from Google Maps in a 24 hour period, we decided to create a program that continuously runs until the rate limit is encountered, sleeps, and wakes up every hour trying to hit the Google server to look for the addresses.
+
+This program collects all the addresses and store them in a temporary file and update them again based on their index in a main file. The program is designed to run at multiple locations for different index ranges to collect as much address as possible.
+
+\subsection{Shortcomings}
+
+As mentioned in the previous section, because the data is not homogeneous, there are bound to be disparities. Missing data - columns which are not found across all spreadsheets - is the biggest issue. We can make assumptions when there is sparse data, but it would not be prudent to make assumptions where there is no data. For this reason, we fully disclose the absence data where necessary.
+
+All of the data has been entered by humans at some point, so there are likely many human-generated errors. Some of these can be seen as outliers. Particularly in the LCA 2008 and pre-iCERT 2009 data, the wage unit is most certainly incorrect in some spots. For example, some wages are listed at \$500 per hour, but the intended unit may have been per week. It is not possible to fix this pro grammatically though, because there are, in fact, some jobs that pay \$500 per hour (CEOs, for instance). This data must be dealt with in one of two ways. They can either be corrected by hand inspection of outliers, or outliers can be removed completely. This results in a slight loss of fidelity. Extremely high paying jobs, such as CEO or physician may not be displayed.
+
+Another issue is the switch from U.S. Citizenship and Immigration Services Dictionary of Occupational Titles (DOT) codes in 2008 and pre-iCERT 2009 data, to the North American Industry Classification System (NAICS) codes. The DOT codes are three digits and fairly high-level, where as the NAICS codes are hierarchical, with the first two being the industry, and the specification of the job title narrowing with up to six digits. For this reason, it is difficult to get consistent job titles across years. 
+
+PERM data is comprehensive for 2015 and 2016, however the data for each year have inconsistencies. We had to make some educated judgement about some categories and ignore many cases with empty values. 
+Years 2008-2014 have 25 attributes, but most of them do not give us substantial information other than salary and employer name.
+The nature of this data made it hard to graph plots based of these categorical variables. 
+Here is a sample of unique values in the categorical data:
+
+\begin{center}
+\begin{tabular}{ r l }
+  53,011 & Job title based on Perm data \\
+  46,410 & Job Title based on Work \\
+  40,431 & Study Major \\
+  135,955 & Employers \\
+  213 & Countries in the "other" category \\
+\end{tabular}
+\end{center}
+
+
+\section{Methods}
+
+The numeric data provided by the H-1B and PERM datasets are mostly in the form of wages, both the wage that the employer is offering and the prevailing wage.\footnote{Prevailing wage is defined as the hourly wage, usual benefits and overtime, paid to the majority of workers, laborers, and mechanics within a particular geographic area.} Also of interest, are the number of workers an applicant is filing for, and the implicit number of applications faceted by status and year.
+
+\subsection{Data product}
+
+The data is provided as an interactive \texttt{Shiny} application, that allows the user to filter wages by various criteria. 
+
+The plots consist of distributions and and heat maps of wages across the United States.
+Our objective is to have data that can be sliced by users into different factors; by state, city, employer, job major, function, salary. 
+The data products we produce will help our target audience make informed decision about kinds of employment held by high skilled immigrants, what employers are hiring, and what kinds of skills employers are looking for.
+
+First we will look the number of applications processed since 2008.
+Using these statistics, we can gauge an increasing or decreasing trend in the number of applications processed.
+Although there are caps on the annual number of employment based immigration, an increasing trend or maximum use of employment based immigration would provide insight.
+
+Next, we can look for immigration based on geography. In what regions are employers hiring? 
+We can also look at time series data on hiring by job function, job majors and university of education. 
+Box plots, histograms, bar charts and heat maps are some of those plots we will use to draw inferences.
+
+
+\section{Results}
+
+% If we can generalize here, then we'll have an overview
+% \subsection{Overview}
+
+\subsection{Prevailing Wage}
+
+It would be interesting to see how many workers are getting approved for H-1B visas over the years. We can see this by plotting the number of workers within each visa status category (Certified, Denied, and Withdrawn). 
+
+<<echo=FALSE, fig.height=4, fig.width=6, warning=FALSE, error=FALSE>>=
+options(scipen=999)
+
+visas <- readRDS('VisasByJob.rds')
+
+visas.by.status <- select(visas, fy, total_workers, status) %>%
+    filter(!is.na(status)) %>%
+    filter(total_workers < 1000) %>%
+    group_by(status, fy) %>%
+    dplyr::summarise(tot = sum(total_workers, na.rm = TRUE))
+
+visas.by.status$status <- as.factor(visas.by.status$status)
+
+ggplot(visas.by.status, aes(x = status, y = tot))  +
+  geom_bar(stat = "identity") +
+  scale_x_discrete(labels=(c("C", "D", "W"))) +
+  facet_grid(~ fy) +
+  labs(title = "Number of workers by application status, 2008 - 2016", x = "Application Status", y = "Numer of workers requested")
+
+@
+
+Clearly, we can see huge outliers in 2010 and 2013 that don't seem to fit the data. Upon investigation, it is safe to say that all H-1B applications requesting over 1,000 total workers are either denied or withdrawn. These can be safely ignored.
+
+<<echo=FALSE>>=
+# In case we want to investigate the outliers
+# case.numbers <- visas[which(visas$total_workers %in% sort(visas$total_workers, decreasing = T)[1:20])]$case_number
+# case.numbers
+@ 
+
+<<echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
+# Let's look at the statuses of the higher ones and if they were denied, we'll exclude them. 
+ 
+outliers.by.status <- select(visas, fy, total_workers, status) %>%
+    filter(!is.na(status)) %>%
+    filter(total_workers > 1000) %>%
+    arrange(total_workers, fy)
+  
+kable(outliers.by.status, format = "latex", caption = "Applications requesting over 1000 workers", booktabs = TRUE)
+@
+
+Once we remove all requests for more than 1,000 workers, we can start to see a pattern. The number of denied and withdrawn applications remains fairly constant, but the number of certified workers shows a steady rise after 2010, most likely due to a strengthening economy and returning jobs. \cite{BLS}
+
+<<echo=FALSE, warning=FALSE, fig.height=4, fig.width=6>>=
+
+# Everything over 1000 workers were either denied or withdrawn. We can ignore those.
+
+# Data from the BLS: http://data.bls.gov/timeseries/CES0000000001?output_view=net_1mth
+jobs2008 <- sum(c(19, -86, -78, -210, -185, -165, -209, -266, -452, -473, -769, -695)) * 1000
+jobs2009 <- sum(c(-791, -703, -823, -686, -351, -470, -329, -212, -219, -200, -7, -279)) * 1000
+jobs2010 <- sum(c(28, -69, 163, 243, 522, -133, -70, -34, -52, 257, 123, 88)) * 1000
+jobs2011 <- sum(c(42, 188, 225, 346, 73, 235, 70, 107, 246, 202, 146,  207)) * 1000
+jobs2012 <- sum(c(338, 257, 239, 75, 115, 87, 143, 190, 181, 132, 149, 243)) * 1000
+jobs2013 <- sum(c(190, 311, 135, 192, 218, 146, 140, 269, 185, 189, 291, 45)) * 1000
+jobs2014 <- sum(c(187, 168, 272, 310, 213, 306, 232, 218, 286, 200, 331, 292)) * 1000
+jobs2015 <- sum(c(221, 265, 84, 251, 273, 228, 277, 150, 149, 295, 280, 271)) * 1000
+jobs2016 <- sum(c(168, 233, 186, 144, 24, 271, 252, 167, 156, 0, 0, 0)) * 1000
+
+jobs <- as.integer(c(jobs2008, jobs2009, jobs2010, jobs2011, jobs2012, jobs2013, jobs2014, jobs2015, jobs2016))
+years <- as.double(2008:2016)
+stat.code <- as.character(rep("JOBS", 9))
+job.stats <- data.frame(stat.code, years, jobs)
+colnames(job.stats) <- c("status", "fy", "tot")
+
+visas.by.status <- select(visas, fy, total_workers, status) %>%
+    filter(!is.na(status)) %>%
+    filter(status == "CERTIFIED") %>%
+    filter(total_workers < 1000) %>%
+    group_by(status, fy) %>%
+    dplyr::summarise(tot = sum(total_workers))
+
+visas.by.status.vs.jobs <- rbind(as.data.frame(visas.by.status), job.stats)
+
+ggplot(visas.by.status.vs.jobs, aes(x = status, y = tot, fill = status))  +
+  geom_bar(stat = "identity") +
+  scale_x_discrete(labels=NULL) +
+  facet_grid(. ~ fy) +
+  labs(title = "Workers by application status vs. U.S. job market", x = "Certified H-1Bs vs. U.S. Job Market")
+
+fy <- 2007
+visas.count <- visas.by.status$tot[which(visas.by.status$fy > fy)]
+visas.year <- visas.by.status$fy[which(visas.by.status$fy > fy)]
+
+plot(x = visas.year, visas.count, col="red", ylim = c(0, max(visas.count) + 1000))
+
+visas.lm <- lm(visas.count ~ visas.year)
+abline(visas.lm, col="red")
+
+visas.lm.summary <- summary(visas.lm)
+visas.lm.pval <- visas.lm.summary$coefficients[2, "Pr(>|t|)"]
+visas.lm.rsq <- visas.lm.summary$r.squared
+next.year <- data.frame(visas.year = 2017)
+next.year.pred <- predict(visas.lm, next.year, interval="predict")[1, 'fit']
+@
+
+The demand for new temporary worker jobs year over year suggests a strong linear relation with $\rho = $ \Sexpr{visas.lm.rsq} and a $p$-value of \Sexpr{visas.lm.pval}. We could estimate that if things continue on this course, in 2017 we should expect to see \Sexpr{digits.format(round(next.year.pred), sci.digits = 0)} temporary foreign worker jobs added.
+
+% XXX: Not sure how much the correlation matters. It isn't super strong. To be determined...
+%After 2009, the certified visa workers count shows a correlation coefficient of \Sexp{corr.coef}, which suggests some correlation. The U.S. jobs line, does not suggest a trend, with a $p$-value of 
+
+At this point, it should be noted that there is a major discrepancy between the number of workers granted temporary status and the legal cap of 65,000. This will take some research to clarify.
+
+
+<<echo=FALSE, warning=FALSE, fig.height=4, fig.width=6>>=
+naics.job.title <- "Computer Systems Design Services"
+hist(visas[which(visas$naics_title == naics.job.title),]$normalized_wage, 
+     breaks=500, 
+     xlim = c(0, 500000),
+     main = paste(naics.job.title, "wages", sep = " "),
+     xlab = "Normalized Wage")
+
+csds.mean <- mean(visas[which(visas$naics_title == naics.job.title),]$normalized_wage, na.rm = TRUE)
+csds.median <- median(visas[which(visas$naics_title == naics.job.title),]$normalized_wage, na.rm = TRUE)
+
+naics.job.title <- "Construction"
+hist(visas[which(visas$naics_title == naics.job.title),]$normalized_wage, 
+     breaks=500, 
+     xlim = c(0, 500000),
+     main = paste(naics.job.title, "wages", sep = " "),
+     xlab = "Normalized Wage")
+
+construction.mean <- mean(visas[which(visas$naics_title == naics.job.title),]$normalized_wage, na.rm = TRUE)
+construction.median <- median(visas[which(visas$naics_title == naics.job.title),]$normalized_wage, na.rm = TRUE)
+@
+
+Here we see Computer Systems Design Services with a mean wage of \Sexpr{ currency.format(csds.mean) } and a median wage of \Sexpr{ currency.format(csds.median) }.
+Construction fields show a higher wage mean but lower median of \Sexpr{ currency.format(construction.mean) } and \Sexpr{ currency.format(construction.median) } respectively, as well as more outliers.
+
+In fact, outliers prove to be challenging when examining this data. With the diversity of jobs and the vague umbrella fields they fall under, this will always be a challenge with wage data. A construction worker may only earn \$45,000, and the CEO of a construction firm may earn \$500,000, but they both fall under the Construction umbrella.
+
+For this reason, it may be necessary to further break down the categories into job titles. This gets tricky with the data we have.
+
+<<echo=FALSE, fig.height=4, fig.width=6, warning=FALSE, message=FALSE>>=
+
+options(scipen=10)
+
+# setwd("C:/Users/pavi/Desktop/UNO/IntroDataScience/Project/Data/testdat")
+
+dat_all <-  readRDS(file="PermData.rds")
+
+
+# Overview
+
+
+# average pay of perm applications
+df <- dat_all %>% filter(CASE_STATUS %in% c('CERTIFIED','CERTIFIED-EXPIRED') )  %>% dplyr::group_by(YEAR, CASE_STATUS) %>% 
+  dplyr::summarize(AVG_SALARY = mean(normalized_wage, na.rm = T)) %>% 
+  mutate_each(funs(prettyNum(., big.mark=",", digits=0))) %>%
+  spread(CASE_STATUS, AVG_SALARY ) 
+
+
+df1 <- dat_all %>% filter(CASE_STATUS %in% c('CERTIFIED','CERTIFIED-EXPIRED') ) %>%  dplyr::group_by(YEAR) %>% 
+  dplyr::summarize(AVG_SALARY = mean(normalized_wage, na.rm = T))
+df1$AVG_SALARY = formatC(as.numeric(df1$AVG_SALARY), format="f", digits=0, big.mark=",")
+  
+df2=merge(df,df1, by.all='YEAR')
+
+kable(df2 ,format = 'latex', caption = "Average Pay by Case Status", booktabs = TRUE)
+
+
+# number of perm applications
+df <- dat_all %>%  dplyr::group_by(YEAR, CASE_STATUS) %>% 
+  dplyr::summarize(APPLICATIONS = n()) %>% 
+  mutate_each(funs(prettyNum(., big.mark=",", digits=0))) %>%
+  spread(CASE_STATUS, APPLICATIONS ) 
+
+df1 <- dat_all %>%  dplyr::group_by(YEAR) %>% 
+  dplyr::summarize(APPLICATIONS = n())
+df1$APPLICATIONS = formatC(as.numeric(df1$APPLICATIONS), format="f", digits=0, big.mark=",")
+
+df2=merge(df,df1, by.all='YEAR')
+
+kable(df2 ,format = 'latex', caption = "Applications by year", booktabs = TRUE)
+
+@
+
+Under the PERM data, we are seeing a higher than average salary from 2008-2013 and in the last three years, the average salary has dropped, and incidentally the number of applications have increased.
+
+<<echo=FALSE, warning=FALSE , fig.height=4, fig.width=6>>=  
+
+# Grouping by study major starts here
+
+
+df = filter(dat_all, YEAR>=2015)%>% filter(CASE_STATUS %in% c('CERTIFIED','CERTIFIED-EXPIRED') )%>% 
+  group_by(JOB_INFO_MAJOR) %>% dplyr::summarise(count_rec = n(), salary = sum(normalized_wage, na.rm = TRUE)) %>%  
+  arrange(desc(count_rec))
+
+# write.csv(distinct_df, file="Major.csv")
+
+df <- sqldf("SELECT COUNT_REC, JOB_INFO_MAJOR, salary, 
+case
+      
+            	  when (JOB_INFO_MAJOR like 'DATA SCIENCE%' OR JOB_INFO_MAJOR like 'DATA SC%' OR JOB_INFO_MAJOR like 'DATA ANALY%') then 'DATA SCIENCE'
+      when ((JOB_INFO_MAJOR like '%COMP%SC%' OR JOB_INFO_MAJOR like '%ENGG%') AND (JOB_INFO_MAJOR like '%MATH%')) then   'ENGG_MATH'
+             when ((JOB_INFO_MAJOR like '%COMP%SC%' OR JOB_INFO_MAJOR like '%ENGG%') AND (JOB_INFO_MAJOR like '%RELATE%' OR JOB_INFO_MAJOR like '%ANY%')) OR (JOB_INFO_MAJOR = 'ENGINEERING') then 'ANY ENGG'
+             when (JOB_INFO_MAJOR like 'COMPUTER SCIENCE%' OR JOB_INFO_MAJOR like 'INFORMATION TECHNOLOGY%' OR JOB_INFO_MAJOR like 'SOFTWARE ENGINEERING%' OR JOB_INFO_MAJOR like 'COMPUTER ENGINEERING%' OR JOB_INFO_MAJOR like 'COMPUTERS') then 'COMPUTER SCIENCE'
+             when (JOB_INFO_MAJOR like 'BUSINESS%' OR JOB_INFO_MAJOR like 'MANAGEMENT%' OR JOB_INFO_MAJOR = 'MBA') then 'MANAGEMENT'
+             when ((JOB_INFO_MAJOR like 'MECH%' OR JOB_INFO_MAJOR like '%ELECTR%' OR JOB_INFO_MAJOR like '%ELECTRO%' OR JOB_INFO_MAJOR like '%CHEM%' OR JOB_INFO_MAJOR like '%CIVIL%' OR JOB_INFO_MAJOR like 'PETRO%'   OR JOB_INFO_MAJOR like '%INDUS%') AND (JOB_INFO_MAJOR like '%ENGINEERING')) then 'OTHER ENGINEERING'
+             when (JOB_INFO_MAJOR like '%ACCOUNTING%' OR JOB_INFO_MAJOR like '%FINANCE%' OR JOB_INFO_MAJOR like '%ECONOMICS%' OR JOB_INFO_MAJOR LIKE 'ACCOUNTA%') then  'FINANCE'
+             when (JOB_INFO_MAJOR like 'MATHEMATICS%' OR JOB_INFO_MAJOR like 'OPERATIONS RESEARCH%') then  'MATHEMATICS'
+             when (JOB_INFO_MAJOR like 'COMPUTER SCIENCE%' OR JOB_INFO_MAJOR like 'MATHEMATICS%'  ) then  'OTHER STEM'
+             when (JOB_INFO_MAJOR like 'STATISTICS%' OR JOB_INFO_MAJOR like 'BIOSTATIS%') then 'STATISTICS'
+             when (JOB_INFO_MAJOR like 'BIOLOG%' OR JOB_INFO_MAJOR like 'CHEMISTRY%' OR JOB_INFO_MAJOR like 'PHYSICS%' OR JOB_INFO_MAJOR = 'SCIENCE' OR JOB_INFO_MAJOR LIKE 'BIOMEDICAL%') then  'SCIENCE'
+             when (JOB_INFO_MAJOR like '%EDUCATION%' OR JOB_INFO_MAJOR = 'ENGLISH') then	'EDUCATION'
+             when (JOB_INFO_MAJOR like 'MEDICINE%' OR JOB_INFO_MAJOR like 'DENTIST%' OR JOB_INFO_MAJOR like 'NURSING%' OR JOB_INFO_MAJOR like '%MEDICINE%') then  'MEDICAL'
+             when (JOB_INFO_MAJOR like 'ARTS%' OR JOB_INFO_MAJOR like 'FASHION%') then 'ARTS FASHION'
+             when (JOB_INFO_MAJOR like 'LAW%') then 'LAW'
+             when (JOB_INFO_MAJOR like 'MARKETING%') THEN 'MARKETING'
+             when (JOB_INFO_MAJOR like 'ARCHITECTURE%' OR JOB_INFO_MAJOR like '%CONSTRUCTION%') then 'ARCHITECTURE'
+             when (JOB_INFO_MAJOR like 'ENG%' OR JOB_INFO_MAJOR like 'SCI%') THEN 'OTHER STEM'
+      	  
+      
+      ELSE 'OTHER'
+      END JOB_MAJOR
+      
+      FROM df
+      WHERE JOB_INFO_MAJOR IS NOT NULL
+      ORDER BY COUNT_REC DESC
+            
+      "
+      )
+
+dat=left_join(dat_all, df, by = 'JOB_INFO_MAJOR')
+dat=subset(dat, !is.na(salary) )
+
+dat1 = df %>% 
+  dplyr::group_by(JOB_MAJOR) %>% 
+  dplyr::summarise(mean_salary=sum(salary)/sum(count_rec), count_rec=sum(count_rec)) %>%
+  dplyr::arrange(desc(mean_salary))
+
+box_status <- ggplot(dat1, aes(x=JOB_MAJOR, y=mean_salary/1000)) 
+box_status + geom_bar(stat="identity") + coord_flip() +ylab('Mean Salary in 000\'s')
+
+box_status <- ggplot(dat1, aes(x=JOB_MAJOR, y=count_rec)) 
+box_status + geom_bar(stat="identity") + coord_flip() +ylab('Number of Perm Applied\'s')
+
+state_by_value <-
+  dat %>% group_by(JOB_INFO_WORK_STATE) %>%
+  dplyr::summarise(count = n(), mean_salary = mean(normalized_wage, na.rm = TRUE))
+
+state_by_value$region = tolower(state_by_value$JOB_INFO_WORK_STATE)
+data(state.regions)
+
+state_by_value <- merge(state_by_value, state.regions, by.x  = "region", by.y = "region")
+state_by_value$value = state_by_value$mean_salary
+state_choropleth(state_by_value, title = "Mean Salary by State",num_colors=1)
+
+state_by_value$value = state_by_value$count
+state_choropleth(state_by_value, title = "Number of Perm by State",num_colors=1)
+
+
+# Desc(dat$salary, main = "Salary distribution", plotit = TRUE)
+# 
+# Desc(dat$CASE_STATUS, plotit = T)
+
+
+# perm count by year
+
+df <- dat_all %>%  dplyr::group_by(YEAR, CASE_STATUS) %>% 
+  dplyr::summarize(AVG_SALARY = mean(normalized_wage, na.rm = T), APPLICATIONS = n()) 
+
+ggplot(df, aes(x=factor(YEAR), y=APPLICATIONS, fill=CASE_STATUS)) + 
+  geom_bar(stat="identity") +xlab("Year")+ylab("Number of Perm")+ 
+  theme(legend.position="bottom") 
+
+df1 <- dat_all %>% filter(CASE_STATUS %in% c('CERTIFIED','CERTIFIED-EXPIRED')) %>%
+  dplyr::group_by(FOREIGN_WORKER_INFO_INST) %>% filter(!is.na(FOREIGN_WORKER_INFO_INST)) %>%
+  dplyr::summarize(AVG_SALARY = mean(normalized_wage, na.rm = T), APPLICATIONS = n()) %>%
+  filter(APPLICATIONS > 10)  %>% arrange(desc(AVG_SALARY))  %>%  top_n(10, AVG_SALARY)
+
+ggplot(df1, aes(reorder(x=factor(FOREIGN_WORKER_INFO_INST), -AVG_SALARY), y=AVG_SALARY)) +
+geom_bar(stat="identity") +xlab("University of Education")+ylab("High Avg. Salary")  + coord_flip() +
+  theme(axis.text.x = element_text(angle=75, vjust=1, size=7), 
+        axis.text.y = element_text(angle=15, vjust=1, size=5))
+
+
+@
+
+
+\subsection{Offered Wage}
+
+There are some significant outliers in the offered wages for both H-1B and PERM. 
+Depending on the methods used to exclude and deal with outliers, it is possible and likely we may see differing statistical results. 
+One way to mitigate this in the PERM data is to include only approved applications, which mitigates error introduced in denied cases. 
+We can also consider excluding outliers that are 2 standard deviations away from the mean.
+
+
+% TODO:
+%\subsection{H-1B vs. PERM}
+
+\section{Conclusion}
+
+
+Our results confirmed the findings of Mukhopadhyay and Oxborrow \cite{Greencard}, where it was proven that temporary visa workers earn less than the permanent visa holders in the US.
+Since H1-B workers are restricted from moving across jobs, mainly because they have already applied for permanent residency with their current employers and cannot switch jobs for fear of being denied and having to start the visa process all over again. Temporary workers see lower wages and in some cases no benefits including healthcare coverage.
+
+It is clear that PERM workers, on average, receive higher wages than H-1B workers. 
+
+The highest paying jobs can be found in the fields of (fields here).
+
+The highest paying and lowest paying states, normalized by cost of living, are (states here).
+
+\pagebreak
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                     BIBLIOGRAPHY
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{thebibliography}{9}
+
+
+\bibitem{DoL}
+  U.S. Department of Labor,
+  Office of Foreign Labor Certification Disclosure Data,
+  \href{https://www.foreignlaborcert.doleta.gov/performancedata.cfm}{https://www.foreignlaborcert.doleta.gov/performancedata.cfm}
+  
+\bibitem{GitHub}
+  Detweiler, Brian.
+  GitHub, stat-8416-final-project,
+  \href{https://github.com/bdetweiler/stat-8416-final-project}{https://github.com/bdetweiler/stat-8416-final-project}
+
+\bibitem{BLS}
+  Bureau of Labor Statistics
+  \href{http://data.bls.gov/timeseries/CES0000000001?output\_view=net\_1mth}{http://data.bls.gov/timeseries/CES0000000001?output\_view=net\_1mth}
+  
+\bibitem{Supply}  
+  Kerr, William R. Lincoln, William F.
+  \textit{The Supply Side of Innovation: H-1B Visa Reforms and US Ethnic Invention}.
+  National Bureau of Economic Research,
+  \href{http://www.nber.org/papers/w15768.pdf}{http://www.nber.org/papers/w15768.pdf}
+  
+\bibitem{Greencard}  
+  Mukhopadhyay, Sankar. Oxborrow, David.
+  \textit{The Value of an Employment-Based Green Card}
+  PubMed,
+  \href{https://www.ncbi.nlm.nih.gov/pubmed/22161232}{https://www.ncbi.nlm.nih.gov/pubmed/22161232}
+  
+% Specifications, but not publications: 
+%
+% https://www.uscis.gov/working-united-states/temporary-workers/h-1b-specialty-occupations-dod-cooperative-research-and-development-project-workers-and-fashion-models
+% https://www.uscis.gov/working-united-states/permanent-workers
+  
+\end{thebibliography}
+
+\end{document}
