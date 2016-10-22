@@ -145,11 +145,12 @@ a = rbind(file2008,file2009,file2010,file2011,file2012,file2013,file2014,file201
 
 saveRDS(a,"PermDataPrep.rds")
 
-gc(verbose = T)
-rm(list=ls(all=TRUE))
+
+#cleaning all objects in my environment
+#rm(list=ls(all=TRUE))
 
 
-
+# Now read a clean raw file for data manipulation 
 
 
 mysample = readRDS(file="PermDataPrep.rds")
@@ -258,6 +259,7 @@ empmapdat$ID  <- 1:nrow(empmapdat)
 saveRDS(permds,"PermData.rds")
 saveRDS(empmapdat,"PermEmpMapsdat.rds")
 
-rm(list=ls(all=TRUE))
+#cleaning all objects in my environment
+#rm(list=ls(all=TRUE))
 
 
