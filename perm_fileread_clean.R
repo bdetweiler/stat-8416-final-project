@@ -1,7 +1,7 @@
 library(readxl)
 library(dplyr)
 
-#setwd("C:/Users/pavi/Desktop/UNO/IntroDataScience/Project/Data/testdat")
+# setwd("C:/Users/pavi/Desktop/UNO/IntroDataScience/Project/Data/testdat")
 
 # data frame with columns that arent there in 2008-2014 dataset
 add_cols = data.frame('JOB_INFO_WORK_POSTAL_CODE'=NA, 'EMPLOYER_NUM_EMPLOYEES'=NA,	'EMPLOYER_YR_ESTAB'=NA,	'EMPLOYER_PHONE'=NA,	'AGENT_FIRM_NAME'=NA,	'AGENT_CITY'=NA,	'AGENT_STATE'=NA,	'PW_SOC_TITLE'=NA,	'JOB_INFO_JOB_TITLE'=NA,	'JOB_INFO_EDUCATION'=NA,	'JOB_INFO_MAJOR'=NA,	'JOB_INFO_FOREIGN_ED'=NA,	'RI_1ST_AD_NEWSPAPER_NAME'=NA,	'RI_2ND_AD_NEWSPAPER_NAME'=NA,	'FW_INFO_YR_REL_EDU_COMPLETED'=NA,	'FOREIGN_WORKER_INFO_INST'=NA, 'JOB_INFO_EXPERIENCE_NUM_MONTHS'=NA)
@@ -143,7 +143,7 @@ file2016=dataset(file,2016)
 
 a = rbind(file2008,file2009,file2010,file2011,file2012,file2013,file2014,file2015,file2016)
 
-saveRDS(a,"PermDataPrep.rds")
+saveRDS(a,"PermData.rds")
 
 
 #cleaning all objects in my environment
@@ -153,7 +153,7 @@ saveRDS(a,"PermDataPrep.rds")
 # Now read a clean raw file for data manipulation 
 
 
-mysample = readRDS(file="PermDataPrep.rds")
+mysample = readRDS(file="PermData.rds")
 # mysample <- mysample[sample(1:nrow(mysample), 500,replace=FALSE),]
 mysample=transform(mysample,DECISION_DATE=as.Date(mysample$DECISION_DATE, format = '%m/%d/%Y'))
 # write.csv(mysample, file = "sampleperm.csv")
