@@ -570,6 +570,7 @@ We are seeing outliers in the wage offered both in H1B and Perm. How we deal wit
 % TODO:
 \section{Conclusion}
 \pagebreak
+Our results confirmed the findings of David Oxborrow and Sankar Mukhopadhyay in "The Value of an Employment-Based Green Card" where it was proven that temporary visa workers earn less than the permanent visa holders in the US. Since H1-B workers are restricted to move across jobs ,mainly because they already applied for permanent residency with their current employers and cannot switch jobs in fear of being denying and starting the visa process all over again, they face abuses from their employers such as lower rages and in some cases no healthcare coverages and excessive fees.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -596,6 +597,7 @@ We are seeing outliers in the wage offered both in H1B and Perm. How we deal wit
   https://www.uscis.gov/working-united-states/temporary-workers/h-1b-specialty-occupations-dod-cooperative-research-and-development-project-workers-and-fashion-models
   https://www.uscis.gov/working-united-states/permanent-workers
   
+  Mukhopadhyay, S. & Oxborrow.The Value of an Employment-Based Green Card. D. Demography (2012) 49: 219. doi:10.1007/s13524-011-0079-3
 \end{thebibliography}
 
 
