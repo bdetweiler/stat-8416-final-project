@@ -16,7 +16,7 @@ shinyUI(bootstrapPage(
               value = 200000,
               step = 25000),
   
-  plotOutput(outputId = "h1b", height = "300px"),
+  plotOutput(outputId = "h1b", height = "300px")
   
-  plotOutput(outputId = "perms", height = "300px")
+  #plotOutput(outputId = "perms", height = "300px")
 ))

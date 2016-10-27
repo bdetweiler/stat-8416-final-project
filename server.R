@@ -14,14 +14,14 @@ shinyServer(function(input, output) {
     lines(dens, col="blue")
   })
   
-  output$perms <- renderPlot({
-    hist(perm[which(perm$normalized_wage > input$x_min & perm$normalized_wage < input$x_max), ]$normalized_wage, 
-         breaks=500,
-         main="PERM Wage Distribution",
-         xlab="Wage",
-         freq=F)
-    dens <- density(perm[which(perm$normalized_wage > input$x_min & perm$normalized_wage < input$x_max), ]$normalized_wage,
-                    kernel="optcosine")
-    lines(dens, col="blue")
-  })
+  #output$perms <- renderPlot({
+    #hist(perm[which(perm$normalized_wage > input$x_min & perm$normalized_wage < input$x_max), ]$normalized_wage, 
+         #breaks=500,
+         #main="PERM Wage Distribution",
+         #xlab="Wage",
+         #freq=F)
+    #dens <- density(perm[which(perm$normalized_wage > input$x_min & perm$normalized_wage < input$x_max), ]$normalized_wage,
+                    #kernel="optcosine")
+    #lines(dens, col="blue")
+  #})
 })
