@@ -264,3 +264,73 @@ years <- select(visas, ) %>%
 hist(wage$normalized_prevailing_wage, xlim=c(0, 300000), breaks=500)
 
 plot(visas$year, visas$normalized_prevailing_wage)
+
+
+
+
+# Maps example 1
+
+crimes <-data.frame(state = tolower(rownames(USArrests)), USArrests)
+
+states_map <-map_data("state")
+
+ggplot(crimes, aes(map_id = state)) +
+  geom_map(aes(fill = Murder), map = states_map) +
+  expand_limits(x = states_map$long, y = states_map$lat) 
+
+
+remove.territories = function(.df) {
+  subset(.df, 
+         .df$id != "AS" &
+           .df$id != "MP" &
+           .df$id != "GU" & 
+           .df$id != "PR" &
+           .df$id != "VI" 
+  )
+}
+
+plain_theme = theme(axis.text=element_blank()) + 
+  theme(panel.background = element_blank(), 
+        panel.grid = element_blank(), 
+        axis.ticks = element_blank())
+
+no_ylab = ylab("") 
+no_xlab = xlab("")
+
+
+# Shiny plots
+
+library(ggplot2)
+library(choroplethr)
+library(choroplethrMaps)
+library(dplyr)
+
+
+final.shiny <- readRDS('ShinyDatset.rds')
+
+# Should also filter out outliers
+choro <- select(final.shiny, employer_state, normalized_wage) %>%
+  filter(!is.na(employer_state)) %>%
+  filter(!is.na(normalized_wage)) %>%
+  group_by(region = employer_state) %>%
+  summarise(value = mean(normalized_wage))
+
+head(choro)
+
+state_choropleth(df = choro)
+
+
+
+
+
+ggplot(final.shiny, aes(x = long, 
+                       y = lat)) +
+  geom_polygon(aes(group = group, 
+                   fill = value), 
+               color = "grey65") +
+  scale_fill_gradient(low = "#ffffff", 
+                      high = "#b50306", 
+                      space = "Lab",
+                      na.value = "grey50",
+                      guide = FALSE) +
+  facet_wrap(~variable)

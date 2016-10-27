@@ -993,5 +993,89 @@ uaddy <- unique(addy)
 saveRDS(uaddy, 'H1BUniqueAddresses.rds')
 
 
-# visas <- readRDS('H1BVisas.rds')
 
+#########################################################################
+#                SHINY 
+#########################################################################
+
+visas <- readRDS('H1BVisas.rds')
+
+h1b.shiny <- visas %>%
+                filter(status == "CERTIFIED") %>%
+                select(fy,
+                       job_title,
+                       soc_name,
+                       visa_class,
+                       normalized_wage,
+                       normalized_prevailing_wage,
+                       employer_state)
+
+h1b.shiny$country_of_citizenship <- rep(NA, length(h1b.shiny$fy))
+h1b.shiny$education <- rep(NA, length(h1b.shiny$fy))
+
+# saveRDS(h1b.shiny, 'H1BShiny.rds')
+
+
+
+# H-1B data
+h1b.shiny <- readRDS('H1BShiny.rds')
+
+
+
+perm <- readRDS('PermData.rds')
+
+# Need normalized prevailing wage for PERM data
+normalized_prevailing_wage <- perm$PW_UNIT_OF_PAY_9089
+normalized_prevailing_wage[which(normalized_prevailing_wage == 'BI-WEEKLY')] <-'BIWK'
+normalized_prevailing_wage[which(normalized_prevailing_wage == 'NULL')] <- NA
+normalized_prevailing_wage[which(normalized_prevailing_wage == 'YR')] <- 1
+normalized_prevailing_wage[which(normalized_prevailing_wage == 'HR')] <- 40 * 52
+normalized_prevailing_wage[which(normalized_prevailing_wage == 'BIWK')] <- 52 / 2
+normalized_prevailing_wage[which(normalized_prevailing_wage == 'WK')] <- 52
+normalized_prevailing_wage[which(normalized_prevailing_wage == 'MTH')] <- 12
+normalized_prevailing_wage[which(is.na(normalized_prevailing_wage))] <- 0
+
+normalized_prevailing_wage <- as.numeric(normalized_prevailing_wage)
+perm$normalized_prevailing_wage <- normalized_prevailing_wage * perm$PW_AMOUNT_9089
+perm$normalized_prevailing_wage[which(perm$normalized_prevailing_wage == 0)] <- NA
+
+# Also a visa class
+perm$visa_class <- rep("PERM", length(perm$YEAR))
+
+perm.shiny <- perm %>%
+                filter(CASE_STATUS == "CERTIFIED") %>%
+                select(YEAR,
+                       JOB_INFO_JOB_TITLE,
+                       PW_SOC_TITLE,
+                       visa_class,
+                       normalized_wage,
+                       normalized_prevailing_wage,
+                       JOB_INFO_WORK_STATE,
+                       COUNTRY_OF_CITIZENSHIP,
+                       JOB_INFO_EDUCATION)
+
+colnames(perm.shiny) <- c('fy',
+                          'job_title',
+                          'soc_name',
+                          'visa_class',
+                          'normalized_wage',
+                          'normalized_prevailing_wage',
+                          'employer_state',
+                          'country_of_citizenship',
+                          'education')
+
+saveRDS(perm.shiny, 'PermShiny.rds')
+
+# Combine H-1B and PERM data
+final.shiny <- rbind(h1b.shiny, perm.shiny)
+
+# Lowercase states
+final.shiny$employer_state <- tolower(final.shiny$employer_state)
+
+# Note: We should think about handling Washington D.C.
+nonstates <- unique(final.shiny$employer_state[which(!final.shiny$employer_state %in% tolower(state.name))])
+
+# Remove non-states 
+final.shiny$employer_state[which(final.shiny$employer_state %in% nonstates)] <- NA
+
+saveRDS(final.shiny, "ShinyDatset.rds")
