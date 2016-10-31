@@ -315,8 +315,6 @@ choro <- select(final.shiny, employer_state, normalized_wage) %>%
   group_by(region = employer_state) %>%
   summarise(value = mean(normalized_wage))
 
-head(choro)
-
 state_choropleth(df = choro)
 
 
@@ -334,3 +332,87 @@ ggplot(final.shiny, aes(x = long,
                       na.value = "grey50",
                       guide = FALSE) +
   facet_wrap(~variable)
+
+
+
+
+
+
+
+
+# Interactive state map
+
+library(plotly)
+df <- read.csv("https://raw.githubusercontent.com/plotly/datasets/master/2011_us_ag_exports.csv")
+df$hover <- with(df, paste(state, '<br>', "Beef", beef, "Dairy", dairy, "<br>",
+                           "Fruits", total.fruits, "Veggies", total.veggies,
+                           "<br>", "Wheat", wheat, "Corn", corn))
+
+# give state boundaries a white border
+l <- list(color = toRGB("white"), width = 2)
+# specify some map projection/options
+g <- list(scope = 'usa',
+          projection = list(type = 'albers usa'),
+          showlakes = TRUE,
+          lakecolor = toRGB('white'))
+
+plot_geo(df, locationmode = 'USA-states') %>%
+  add_trace(z = ~total.exports, 
+            text = ~hover, 
+            locations = ~code,
+            color = ~total.exports, 
+            colors = 'Purples') %>%
+  colorbar(title = "Millions USD") %>%
+  layout(title = '2011 US Agriculture Exports by State<br>(Hover for breakdown)',
+         geo = g)
+
+nonstates <- final.shiny$employer_state[which(!final.shiny$employer_state %in% tolower(state.name))]
+final.shiny$employer_state[which(!is.na(final.shiny$employer_state))]
+
+
+
+
+final.shiny.map <- select(final.shiny, fy,
+                                       visa_class,
+                                       normalized_wage,
+                                       normalized_prevailing_wage,
+                                       employer_state) %>%
+                   filter(!is.na(employer_state)) %>%
+                   filter(!is.na(normalized_wage)) %>%
+                   filter(normalized_wage > 0) %>%
+                   group_by(employer_state) %>%           #  We'll also allow grouping by fy and visa_class
+                   summarise(med = median(normalized_wage), 
+                             mean = mean(normalized_wage), 
+                             min = min(normalized_wage),
+                             max = max(normalized_wage))
+
+final.shiny.map$employer_state_abb <- final.shiny.map$employer_state
+for (state in state.name) {
+  final.shiny.map$employer_state_abb[which(tolower(final.shiny.map$employer_state) == tolower(state))]  <- 
+    state.abb[tolower(state.name) %in% tolower(state)]
+}
+
+head(final.shiny.map$hover)
+final.shiny.map$hover <- with(final.shiny.map, paste(employer_state, "<br>",
+                                                     "Mean wage", mean, "<br>", 
+                                                     "Median wage", med, "<br>",
+                                                     "Minimum wage", min, "<br>",
+                                                     "Maximum wage", max))
+
+# give state boundaries a white border
+l <- list(color = toRGB("white"), width = 2)
+# specify some map projection/options
+g <- list(scope = 'usa',
+          projection = list(type = 'albers usa'),
+          showlakes = TRUE,
+          lakecolor = toRGB('white'))
+
+plot_geo(final.shiny.map, locationmode = 'USA-states') %>%
+  add_trace(z = ~med, 
+            text = ~hover, 
+            locations = ~employer_state_abb,
+            color = ~med, 
+            colors = 'Purples') %>%
+  colorbar(title = "Median wage USD") %>%
+  layout(title = 'Foreign Worker Wages by State<br>(Hover for breakdown)',
+         geo = g)
