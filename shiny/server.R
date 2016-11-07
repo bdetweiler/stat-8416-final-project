@@ -1,69 +1,77 @@
-library(shiny)
-library(ggplot2)
-library(choroplethr)
-library(choroplethrMaps)
-library(dplyr)
-library(plotly)
-
-
 shinyServer(function(input, output) {
-  
-  #output$h1b <- renderPlot({
-    #hist(visas[which(visas$normalized_wage > input$x_min & visas$normalized_wage < input$x_max), ]$normalized_wage, 
-         #breaks=500,
-         #main="H1B Wage Distribution",
-         #xlab="Wage",
-         #freq=F)
-    #dens <- density(visas[which(visas$normalized_wage > input$x_min & visas$normalized_wage < input$x_max), ]$normalized_wage,
-                    #kernel="optcosine")
-    #lines(dens, col="blue")
-  #})
-  
-  output$choro <- renderPlotly({
-
-    visa_classifications <- c()
+ 
+    PermSelect <- reactive({ 
+      if(input$show_PERM){
+        print("PERM!")
+        "PERM"
+      }
+      else { NULL }  
+    })
     
-    if (input$show_PERM) {
-      print("PERM!")
-      visa_classifications <- c(visa_classifications, 'PERM')
-    }
-    if (input$show_H1B) {
-      print("H1b!")
-      visa_classifications <- c(visa_classifications, 'H-1B')
-    }
-    if (input$show_H1B1_Singapore) {
-      print("H1b Singapore!")
-      visa_classifications <- c(visa_classifications, 'H-1B1 Singapore')
-    }
-    if (input$show_H1B1_Chile) {
-      print("H1b Chile!")
-      visa_classifications <- c(visa_classifications, 'H-1B1 Chile')
-    }
-    if (input$show_E3) {
-      print("E3!")
-      visa_classifications <- c(visa_classifications, 'E-3 Australia')
-    }
-    print(visa_classifications)
+    H1BSelect <- reactive({ 
+      if(input$show_H1B){
+        "H-1B"
+      }
+      else { NULL }  
+    })
     
-    final.shiny.map <- select(final.shiny, fy,
+    H1B1SingaporeSelect <- reactive({ 
+      if(input$show_H1B1_Singapore){
+        "H-1B1 Singapore"
+      }
+      else { NULL }  
+    })
+    
+    H1B1ChileSelect <- reactive({ 
+      if(input$show_H1B1_Chile){
+        "H-1B1 Chile"
+      }
+      else { NULL }  
+    })
+    
+    E3Select <- reactive({ 
+      if(input$show_E3){
+        "E-3 Australian"
+      }
+      else { NULL }  
+    })
+    
+    print("START=========================================================")
+    
+    # Select just the columns we want 
+    final.shiny.plot <- select(final.shiny, fy,
                                            visa_class,
                                            normalized_wage,
                                            normalized_prevailing_wage,
                                            employer_state) %>%
-                       filter(!is.na(employer_state)) %>%
-                       filter(!is.na(normalized_wage)) %>%
-                       filter(!is.na(visa_class)) %>%
-                       #filter(visa_class %in% visa_classifications) %>%
-                       filter(normalized_wage > input$x_range[1]) %>%
-                       filter(normalized_wage < input$x_range[2]) %>%
-                       group_by(employer_state) %>%           #  We'll also allow grouping by fy and visa_class
+                       dplyr::filter(!is.na(visa_class))  %>%
+                       dplyr::filter(!is.na(employer_state)) %>%
+                       dplyr::filter(!is.na(normalized_wage)) #%>%
+                        
+    print(final.shiny.plot[1:10, ])
+    print(unique(final.shiny.plot$visa_class))
+    
+  # US Map 
+  output$choro <- renderPlotly({
+    
+    # Input conditionals
+    final.shiny.map <- final.shiny.plot %>%
+                       dplyr::filter(normalized_wage > input$x_range[1]) %>%
+                       dplyr::filter(normalized_wage < input$x_range[2]) %>%
+                       dplyr::filter(visa_class %in% PermSelect() |
+                                     visa_class %in% H1BSelect() | 
+                                     visa_class %in% H1B1ChileSelect() |
+                                     visa_class %in% H1B1SingaporeSelect() |
+                                     visa_class %in% E3Select())
+   
+    # Final aggregation 
+    final.shiny.map <- final.shiny.plot %>% 
+                       group_by(employer_state, visa_class) %>%           #  We'll also allow grouping by fy and visa_class
                        summarise(med = median(normalized_wage), 
                                  mean = mean(normalized_wage), 
                                  min = min(normalized_wage),
                                  max = max(normalized_wage))
     
-    print(final.shiny.map[1:10, ])
-
     final.shiny.map$employer_state_abb <- final.shiny.map$employer_state
     for (state in state.name) {
       final.shiny.map$employer_state_abb[which(tolower(final.shiny.map$employer_state) == tolower(state))]  <- 
@@ -95,5 +103,23 @@ shinyServer(function(input, output) {
       layout(title = 'Foreign Worker Wages by State<br>(Hover for breakdown)',
              geo = g)
 
+  })
+  
+  output$dist <- renderPlotly({
+    
+    # Input conditionals
+    final.shiny.dist <-final.shiny.plot %>%
+                       dplyr::filter(normalized_wage > input$x_range[1]) %>%
+                       dplyr::filter(normalized_wage < input$x_range[2]) %>%
+                       dplyr::filter(visa_class %in% PermSelect() |
+                                     visa_class %in% H1BSelect() | 
+                                     visa_class %in% H1B1ChileSelect() |
+                                     visa_class %in% H1B1SingaporeSelect() |
+                                     visa_class %in% E3Select())
+   
+    plot_ly(alpha = 0.6) %>%
+      add_histogram(x = ~final.shiny.dist$normalized_wage) %>%
+      add_histogram(x = ~final.shiny.dist$normalized_prevailing_wage) %>%
+      layout(barmode = "overlay")
   })
 })

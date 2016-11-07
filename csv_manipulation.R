@@ -1013,15 +1013,16 @@ h1b.shiny <- visas %>%
 h1b.shiny$country_of_citizenship <- rep(NA, length(h1b.shiny$fy))
 h1b.shiny$education <- rep(NA, length(h1b.shiny$fy))
 
-# saveRDS(h1b.shiny, 'H1BShiny.rds')
 
+# Give the states their long names
+for (i in 1:length(state.abb)) {
+  h1b.shiny$employer_state[which(h1b.shiny$employer_state == state.abb[i])] <- tolower(state.name[i])
+} 
 
+saveRDS(h1b.shiny, 'H1BShiny.rds')
 
 # H-1B data
 h1b.shiny <- readRDS('H1BShiny.rds')
-
-
-
 perm <- readRDS('PermData.rds')
 
 # Need normalized prevailing wage for PERM data
@@ -1079,3 +1080,6 @@ nonstates <- unique(final.shiny$employer_state[which(!final.shiny$employer_state
 final.shiny$employer_state[which(final.shiny$employer_state %in% nonstates)] <- NA
 
 saveRDS(final.shiny, "ShinyDatset.rds")
+
+
+

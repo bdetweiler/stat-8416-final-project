@@ -1,3 +1,13 @@
+library(shiny)
+library(ggplot2)
+library(choroplethr)
+library(choroplethrMaps)
+library(plotly)
+library(stringr)
+library(lazyeval)
+library(dplyr)
+
+
 final.shiny <- readRDS('ShinyDatset.rds')
 df <- read.csv("https://raw.githubusercontent.com/plotly/datasets/master/2011_us_ag_exports.csv")
 

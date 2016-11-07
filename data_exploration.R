@@ -1,8 +1,10 @@
+# Use this for "scratch paper" - trying things out, jotting down ideas, exploring data.
+
 library(data.table)
-library(dplyr)
 library(mgcv)
 library(bit64)
 library(ggplot2)
+library(dplyr)
 
 options(scipen=999)
 
@@ -416,3 +418,28 @@ plot_geo(final.shiny.map, locationmode = 'USA-states') %>%
   colorbar(title = "Median wage USD") %>%
   layout(title = 'Foreign Worker Wages by State<br>(Hover for breakdown)',
          geo = g)
+
+test1 <- "^__DUMMY1__$|^PERM$|^H-1B$|^H-1B1 Singapore$|^H-1B1 Chile$|^E-3 Australian$|^__DUMMY2__$"
+test <- final.shiny %>% filter(grepl("^E-3 Australian$", visa_class))
+table(test$visa_class)
+
+visa_classifications <- c("H-1B", "PERM")
+head(unlist(lapply(final.shiny$visa_class, '%in%', visa_classifications)))
+
+select(final.shiny, visa_class, employer_state)
+unique(final.shiny$employer_state)
+
+
+final.shiny <- readRDS('ShinyDatset.rds')
+setwd('/home/bdetweiler/src/Data_Science/stat-8416-final-project/shiny')
+
+
+
+
+
+
+
+
+
+
+
