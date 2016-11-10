@@ -17,8 +17,9 @@ shinyUI(fluidPage(
     ),
    
     mainPanel(
-      plotlyOutput(outputId = "choro", height = "365px")#,
-      #plotOutput(outputId = "dist", height = "300px")
+      plotlyOutput(outputId = "choro", height = "365px"),
+      plotOutput(outputId = "dist", height = "300px"),
+      verbatimTextOutput("click")
     )
   ) 
 ))

@@ -2,7 +2,6 @@ shinyServer(function(input, output) {
  
     PermSelect <- reactive({ 
       if(input$show_PERM){
-        print("PERM!")
         "PERM"
       }
       else { NULL }  
@@ -40,17 +39,14 @@ shinyServer(function(input, output) {
     
     # Select just the columns we want 
     final.shiny.plot <- select(final.shiny, fy,
-                                           visa_class,
-                                           normalized_wage,
-                                           normalized_prevailing_wage,
-                                           employer_state) %>%
+                                            visa_class,
+                                            normalized_wage,
+                                            normalized_prevailing_wage,
+                                            employer_state) %>%
                        dplyr::filter(!is.na(visa_class))  %>%
                        dplyr::filter(!is.na(employer_state)) %>%
-                       dplyr::filter(!is.na(normalized_wage)) #%>%
+                       dplyr::filter(!is.na(normalized_wage))
                         
-    print(final.shiny.plot[1:10, ])
-    print(unique(final.shiny.plot$visa_class))
-    
   # US Map 
   output$choro <- renderPlotly({
     
@@ -65,7 +61,7 @@ shinyServer(function(input, output) {
                                      visa_class %in% E3Select())
    
     # Final aggregation 
-    final.shiny.map <- final.shiny.plot %>% 
+    final.shiny.map <- final.shiny.map %>% 
                        group_by(employer_state, visa_class) %>%           #  We'll also allow grouping by fy and visa_class
                        summarise(med = median(normalized_wage), 
                                  mean = mean(normalized_wage), 
@@ -98,28 +94,59 @@ shinyServer(function(input, output) {
                 text = ~hover, 
                 locations = ~employer_state_abb,
                 color = ~med, 
-                colors = 'Purples') %>%
+                colors = 'Blues') %>%
       colorbar(title = "Median wage USD") %>%
       layout(title = 'Foreign Worker Wages by State<br>(Hover for breakdown)',
              geo = g)
 
   })
   
-  output$dist <- renderPlotly({
+  output$dist <- renderPlot({
+   
+    states <- tolower(state.name) 
+    codes <- c( 4,   9,  14,  19,  24,  29,  34,
+               39,  44,  49,  54,  59,  64,  69,
+               73,  78,  83,  88,  93,  98,  103,
+               108, 113, 118, 123, 127, 131, 136,
+               141, 146, 151, 156, 161, 165, 170,
+               175, 180, 185, 190, 195, 199, 204,
+               209, 214, 219, 224, 229, 234, 239,
+               243)
+    
+    d <- event_data("plotly_click")
+    
+    if (is.null(d)) {
+      title <- "Wage distribution for US"
+    } else {
+      print(d$pointNumber)
+      print(d)
+      states <- states[which(codes == d$pointNumber)]
+      s <- paste(toupper(substring(states, 1, 1)), 
+                         substring(states, 2),
+                         sep = "", 
+                         collapse = "")
+      title <- paste0("Wage distribution for ", s)
+    }
+    
+    print(title)
     
     # Input conditionals
     final.shiny.dist <-final.shiny.plot %>%
                        dplyr::filter(normalized_wage > input$x_range[1]) %>%
                        dplyr::filter(normalized_wage < input$x_range[2]) %>%
+                       dplyr::filter(employer_state %in% states) %>%
                        dplyr::filter(visa_class %in% PermSelect() |
                                      visa_class %in% H1BSelect() | 
                                      visa_class %in% H1B1ChileSelect() |
                                      visa_class %in% H1B1SingaporeSelect() |
                                      visa_class %in% E3Select())
    
-    plot_ly(alpha = 0.6) %>%
-      add_histogram(x = ~final.shiny.dist$normalized_wage) %>%
-      add_histogram(x = ~final.shiny.dist$normalized_prevailing_wage) %>%
-      layout(barmode = "overlay")
+    ggplot(final.shiny.dist, aes(normalized_wage, color=visa_class, fill=visa_class)) +
+      geom_density(alpha = 0.1) +
+       scale_x_continuous(labels = comma) +
+       scale_y_continuous(labels = comma) +
+      labs(title=title, x="Wage", y="Density")
   })
+  
+  
 })

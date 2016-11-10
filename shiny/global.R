@@ -1,4 +1,5 @@
 library(shiny)
+library(scales)
 library(ggplot2)
 library(choroplethr)
 library(choroplethrMaps)
