@@ -1,4 +1,6 @@
 shinyUI(fluidPage(
+ 
+  headerPanel("Foreign Workers in the US", windowTitle = "Foreign Workers in the US"),
   
   titlePanel("Filters"), 
   
@@ -18,8 +20,8 @@ shinyUI(fluidPage(
    
     mainPanel(
       plotlyOutput(outputId = "choro", height = "365px"),
-      plotOutput(outputId = "dist", height = "300px"),
-      verbatimTextOutput("click")
+      plotOutput(outputId = "dist", height = "300px")
+      #, verbatimTextOutput("click")
     )
   ) 
 ))

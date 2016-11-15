@@ -36,22 +36,13 @@ shinyServer(function(input, output) {
     })
     
     print("START=========================================================")
+
     
-    # Select just the columns we want 
-    final.shiny.plot <- select(final.shiny, fy,
-                                            visa_class,
-                                            normalized_wage,
-                                            normalized_prevailing_wage,
-                                            employer_state) %>%
-                       dplyr::filter(!is.na(visa_class))  %>%
-                       dplyr::filter(!is.na(employer_state)) %>%
-                       dplyr::filter(!is.na(normalized_wage))
-                        
   # US Map 
   output$choro <- renderPlotly({
     
     # Input conditionals
-    final.shiny.map <- final.shiny.plot %>%
+    final.shiny.map <- final.shiny %>%
                        dplyr::filter(normalized_wage > input$x_range[1]) %>%
                        dplyr::filter(normalized_wage < input$x_range[2]) %>%
                        dplyr::filter(visa_class %in% PermSelect() |
@@ -60,13 +51,20 @@ shinyServer(function(input, output) {
                                      visa_class %in% H1B1SingaporeSelect() |
                                      visa_class %in% E3Select())
    
+    print("MAP: filtered by visa class and income range")    
+    print(sort(sapply(ls(), function(x){ object.size(get(x)) })) )
+    
     # Final aggregation 
     final.shiny.map <- final.shiny.map %>% 
                        group_by(employer_state, visa_class) %>%           #  We'll also allow grouping by fy and visa_class
                        summarise(med = median(normalized_wage), 
                                  mean = mean(normalized_wage), 
                                  min = min(normalized_wage),
-                                 max = max(normalized_wage))
+                                 max = max(normalized_wage),
+                                 n = n())
+    
+    print("MAP: aggregated data")
+    print(sort(sapply(ls(), function(x){ object.size(get(x)) })) )
     
     final.shiny.map$employer_state_abb <- final.shiny.map$employer_state
     for (state in state.name) {
@@ -74,12 +72,15 @@ shinyServer(function(input, output) {
         state.abb[tolower(state.name) %in% tolower(state)]
     }
 
-    
-    final.shiny.map$hover <- with(final.shiny.map, paste(employer_state, "<br>",
-                                                         "Mean wage", nfd(mean), "<br>", 
-                                                         "Median wage", nfd(med), "<br>",
-                                                         "Minimum wage", nfd(min), "<br>",
+    final.shiny.map$hover <- with(final.shiny.map, paste(employer_state, "<br />",
+                                                         "Wages observed", nf(n), "<br />",
+                                                         "Mean wage", nfd(mean), "<br />", 
+                                                         "Median wage", nfd(med), "<br />",
+                                                         "Minimum wage", nfd(min), "<br />",
                                                          "Maximum wage", nfd(max)))
+    
+    print("MAP: added hover")
+    print(sort(sapply(ls(), function(x){ object.size(get(x)) })) )
     
     # give state boundaries a white border
     l <- list(color = toRGB("white"), width = 2)
@@ -96,7 +97,7 @@ shinyServer(function(input, output) {
                 color = ~med, 
                 colors = 'Blues') %>%
       colorbar(title = "Median wage USD") %>%
-      layout(title = 'Foreign Worker Wages by State<br>(Hover for breakdown)',
+      layout(title = 'Median Foreign Worker Wage by State<br />(Hover for breakdown)',
              geo = g)
 
   })
@@ -121,17 +122,18 @@ shinyServer(function(input, output) {
       print(d$pointNumber)
       print(d)
       states <- states[which(codes == d$pointNumber)]
-      s <- paste(toupper(substring(states, 1, 1)), 
-                         substring(states, 2),
-                         sep = "", 
-                         collapse = "")
+      s <- properCase(states)
+      #s <- paste(toupper(substring(states, 1, 1)), 
+                         #substring(states, 2),
+                         #sep = "", 
+                         #collapse = "")
       title <- paste0("Wage distribution for ", s)
     }
     
     print(title)
     
     # Input conditionals
-    final.shiny.dist <-final.shiny.plot %>%
+    final.shiny.dist <-final.shiny %>%
                        dplyr::filter(normalized_wage > input$x_range[1]) %>%
                        dplyr::filter(normalized_wage < input$x_range[2]) %>%
                        dplyr::filter(employer_state %in% states) %>%
@@ -141,12 +143,13 @@ shinyServer(function(input, output) {
                                      visa_class %in% H1B1SingaporeSelect() |
                                      visa_class %in% E3Select())
    
+    print("DIST: filter by class")
+    print(sort(sapply(ls(), function(x){ object.size(get(x)) })) )
+    
     ggplot(final.shiny.dist, aes(normalized_wage, color=visa_class, fill=visa_class)) +
       geom_density(alpha = 0.1) +
        scale_x_continuous(labels = comma) +
        scale_y_continuous(labels = comma) +
       labs(title=title, x="Wage", y="Density")
   })
-  
-  
 })
