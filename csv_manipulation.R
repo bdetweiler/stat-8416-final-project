@@ -1,8 +1,8 @@
 library(data.table)
-library(dplyr)
 library(mgcv)
 library(bit64)
 library(ggplot2)
+library(dplyr)
 
 # For some reason, prevailing wage is printing in scientific notation, which is annoying to look at
 options(scipen=999)
@@ -1081,5 +1081,20 @@ final.shiny$employer_state[which(final.shiny$employer_state %in% nonstates)] <- 
 
 saveRDS(final.shiny, "ShinyDatset.rds")
 
+# Whittling down the Shiny dataset...
+final.shiny <- readRDS("ShinyDatset.rds")
+
+final.shiny.plot <- select(final.shiny, fy,
+                                        visa_class,
+                                        normalized_wage,
+                                        normalized_prevailing_wage,
+                                        employer_state) %>%
+                   dplyr::filter(!is.na(visa_class))  %>%
+                   dplyr::filter(!is.na(employer_state)) %>%
+                   dplyr::filter(!is.na(normalized_wage)) %>%
+                   dplyr::filter(normalized_wage < 500000) %>%
+                   dplyr::filter(normalized_wage > 0)
+
+saveRDS(final.shiny.plot, "ShinyDatset.rds")
 
 

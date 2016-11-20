@@ -430,15 +430,39 @@ select(final.shiny, visa_class, employer_state)
 unique(final.shiny$employer_state)
 
 
-final.shiny <- readRDS('ShinyDatset.rds')
-setwd('/home/bdetweiler/src/Data_Science/stat-8416-final-project/shiny')
+final.shiny <- readRDS('shiny/ShinyDatset.rds')
 
+######################## Presentation stuff
 
+    # Input conditionals
+    final.shiny.plot <- final.shiny %>%
+                       dplyr::filter(normalized_wage > 0) %>%
+                       dplyr::filter(normalized_wage < 500000) %>%
+                       dplyr::filter(visa_class %in% 'H-1B')
+   
+    # Final aggregation 
+    final.shiny.plot <- final.shiny.plot %>% 
+                       group_by(employer_state, visa_class) %>%           #  We'll also allow grouping by fy and visa_class
+                       summarise(med = median(normalized_wage), 
+                                 mean = mean(normalized_wage), 
+                                 min = min(normalized_wage),
+                                 max = max(normalized_wage),
+                                 n = n()) %>%
+                       arrange(med)
 
-
-
-
-
+    final.shiny.plot$employer_state <- 
+      factor(final.shiny.plot$employer_state, levels = final.shiny.plot$employer_state)
+   
+    neb.med <- final.shiny.plot$med[which(final.shiny.plot$employer_state == 'nebraska')]
+    
+    ggplot(final.shiny.plot, aes(y = med, x = employer_state, col = n)) +
+      geom_point(stat="identity") +
+      scale_y_continuous(labels = scales::comma) +
+      scale_colour_gradient(name="LCA Requests", labels = scales::comma, low = "#f7b7b7", high = "#8e0000") +
+      geom_text(aes(x = "nebraska", y = neb.med - 10000, label = paste0("Nebraska median: $", neb.med))) +
+      coord_flip() +
+      labs(x = "State", y = "Median Wage")
+      
 
 
 
