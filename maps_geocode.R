@@ -2,7 +2,7 @@ library(ggmap)
 library(dplyr)
 library(data.table)
 
-min_id = 80000
+min_id = 80000 + 5069 #3225
 max_id = 120000
 mapsdata = readRDS(file="PermEmpMapsdat.rds")
 
