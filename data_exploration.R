@@ -5,6 +5,8 @@ library(mgcv)
 library(bit64)
 library(ggplot2)
 library(dplyr)
+library(rjags)
+source("DBDA2Eprograms/DBDA2E-utilities.R")
 
 options(scipen=999)
 
@@ -258,10 +260,6 @@ wage <- select(visas, normalized_prevailing_wage) %>%
   filter(!is.na(normalized_prevailing_wage)) %>%
   filter(normalized_prevailing_wage > 1000) %>%
   filter(normalized_prevailing_wage < 500000)
-years <- select(visas, ) %>% 
-  filter(!is.na(normalized_prevailing_wage)) %>%
-  filter(normalized_prevailing_wage > 1000) %>%
-  filter(normalized_prevailing_wage < 500000)
 
 hist(wage$normalized_prevailing_wage, xlim=c(0, 300000), breaks=500)
 
@@ -462,8 +460,70 @@ final.shiny <- readRDS('shiny/ShinyDatset.rds')
       geom_text(aes(x = "nebraska", y = neb.med - 10000, label = paste0("Nebraska median: $", neb.med))) +
       coord_flip() +
       labs(x = "State", y = "Median Wage")
-      
 
 
+visas.reduced <- visas %>%
+  select(normalized_wage, normalized_prevailing_wage, fy) %>%
+  filter(normalized_wage < 500000) %>%
+  filter(normalized_wage > 0) %>%
+  filter(!is.na(normalized_wage))
+
+saveRDS(visas.reduced, "visasreduced.rds")
+visas.reduced <- readRDS("visasreduced.rds")
+
+summary(visas.reduced) 
+hist(visas.reduced$normalized_wage, freq=F, xlim=c(0, 250000), breaks = 100)
+
+modelString ="
+model {
+  for( i in 1 : N ) {
+    y[i] ~ dlnorm(muOfLogY, tau) 
+  }
+
+  tau <- 1 / pow(sigmaOfLogY, 2)
+
+  sigmaOfLogY ~ dunif(0.001 * sdOfLogY, 1000 * sdOfLogY )
+  muOfLogY ~ dnorm(meanOfLogY, 0.001 * (1 / pow(sdOfLogY, 2)))
+  muOfY <- exp(muOfLogY + (pow(sigmaOfLogY, 2) / 2))
+  modeOfY <- exp(muOfLogY - pow(sigmaOfLogY, 2))
+  sigmaOfY <- sqrt(exp(2 * muOfLogY + pow(sigmaOfLogY, 2)) * (exp(pow(sigmaOfLogY, 2)) - 1))
+}
+"
+
+writeLines(modelString, con="wages.jags")
+
+trueM <- mean(visas.reduced$normalized_wage)
+trueSD <- sd(visas.reduced$normalized_wage)
 
 
+LogY <- log((visas.reduced$normalized_wage - mean(visas.reduced$normalized_wage)) / sd(visas.reduced$normalized_wage) * trueSD + trueM)
+
+y = exp(LogY)
+
+dataList <- list(y = y,
+                 N = length(visas.reduced$normalized_wage),
+                 meanOfLogY=mean(LogY) ,
+                 sdOfLogY = sd(LogY))
+
+wages.model = jags.model(file="wages.jags", 
+                             data=dataList,
+                             n.chains=4)
+
+update(wages.model, n.iter=2000)
+
+wages.samp <- coda.samples(wages.model, n.iter=10000, variable.names=c("muOfY", "modeOfY", "sigmaOfY"), thin=1)
+summary(wages.samp)
+wages.samp.M <- as.matrix(wages.samp)
+
+
+diagMCMC(codaObject = ratsSamples, parName="alpha")
+diagMCMC(codaObject = ratsSamples, parName="beta")
+diagMCMC(codaObject = ratsSamples, parName="y72")
+diagMCMC(codaObject = ratsSamples, parName="theta72")
+
+
+hist(ratsSamples.M[,"lnx"], breaks=50, freq=F)
+hist(ratsSamples.M[,"beta"], breaks=50, freq=F)
+
+contour(u2, v2, dens2, levels = contours, drawlabels = FALSE, xlim=c(-2.2, -1), ylim=c(1, 5))
+points(ratsSamples.M[,"lnx"], ratsSamples.M[,"lny"], col="red", pch=".")
