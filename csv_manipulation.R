@@ -1023,6 +1023,7 @@ saveRDS(h1b.shiny, 'H1BShiny.rds')
 
 # H-1B data
 h1b.shiny <- readRDS('H1BShiny.rds')
+
 perm <- readRDS('PermData.rds')
 
 # Need normalized prevailing wage for PERM data
@@ -1084,6 +1085,7 @@ saveRDS(final.shiny, "ShinyDatset.rds")
 # Whittling down the Shiny dataset...
 final.shiny <- readRDS("ShinyDatset.rds")
 
+
 final.shiny.plot <- select(final.shiny, fy,
                                         visa_class,
                                         normalized_wage,
@@ -1095,6 +1097,68 @@ final.shiny.plot <- select(final.shiny, fy,
                    dplyr::filter(normalized_wage < 500000) %>%
                    dplyr::filter(normalized_wage > 0)
 
+head(final.shiny.plot)
+
+# Need to shrink the dataset as much as possible
+
+final.shiny.plot$fy <- as.numeric(final.shiny.plot$fy) - 2000
+unique(final.shiny.plot$visa_class)
+final.shiny.plot$visa_class[which(final.shiny.plot$visa_class == 'H-1B')] <- 'A'
+final.shiny.plot$visa_class[which(final.shiny.plot$visa_class == 'H-1B1 Chile')] <- 'B'
+final.shiny.plot$visa_class[which(final.shiny.plot$visa_class == 'H-1B1 Singapore')] <- 'C'
+final.shiny.plot$visa_class[which(final.shiny.plot$visa_class == 'E-3 Australian')] <- 'D'
+final.shiny.plot$visa_class[which(final.shiny.plot$visa_class == 'PERM')] <- 'E'
+
+
+
+final.shiny.plot <- final.shiny.plot %>%
+  filter(!is.na(normalized_wage)) %>%
+  filter(!is.na(normalized_prevailing_wage)) %>%
+  filter(normalized_wage < 250000) %>%
+  filter(normalized_wage > 0) %>%
+  filter(normalized_prevailing_wage < 250000) %>%
+  filter(normalized_prevailing_wage > 0)
+
 saveRDS(final.shiny.plot, "ShinyDatset.rds")
 
+# Even after this reduction, we're still at a 2.68 million row dataset
+dim(final.shiny.plot)
 
+# Let's do some aggregating
+
+final.shiny.agg <- final.shiny.plot %>%
+  group_by(fy, visa_class, employer_state) %>%
+  summarise(n_wage = n(),
+            n_pw = n(),
+            med_wage = median(normalized_wage), 
+            med_pw = median(normalized_prevailing_wage), 
+            mean_wage = mean(normalized_wage),
+            mean_pw = mean(normalized_prevailing_wage),
+            min_wage = min(normalized_wage),
+            max_wage = max(normalized_wage),
+            min_pw = min(normalized_prevailing_wage),
+            max_pw = max(normalized_prevailing_wage),
+            sd_wage = sd(normalized_wage),
+            sd_pw = sd(normalized_prevailing_wage))
+
+final.shiny.agg$hover <- with(final.shiny.agg, paste(employer_state, "<br />",
+                                                     "Wages observed", nf(n_wage), "<br />",
+                                                     "Mean wage", nfd(mean_wage), "<br />", 
+                                                     "Median wage", nfd(med_wage), "<br />",
+                                                     "Minimum wage", nfd(min_wage), "<br />",
+                                                     "Maximum wage", nfd(max_wage)))
+
+    
+final.shiny.agg$employer_state_abb <- final.shiny.agg$employer_state
+for (state in state.name) {
+  final.shiny.agg$employer_state_abb[which(tolower(final.shiny.agg$employer_state) == tolower(state))]  <- 
+    state.abb[tolower(state.name) %in% tolower(state)]
+}
+
+saveRDS(final.shiny.agg, "ShinyDatasetAgg.rds")
+
+final.shiny.agg <- readRDS("ShinyDatasetAgg.rds")
+head(final.shiny.agg$employer_state_abb)
+
+wages <- readRDS('ShinyDatasetAgg.rds')
+unique(wages$visa_class[which(wages$fy == 16)])

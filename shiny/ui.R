@@ -28,15 +28,30 @@ shinyUI(fluidPage(
   sidebarLayout(position="left",
     # Specification of range within an interval
     sidebarPanel(
-      sliderInput(inputId = "x_range", 
-                  label = "Wage range:",
-                  min = 0, max = 500000, value = c(0, 250000)),
-      helpText("Visa Classification"),
-      checkboxInput(inputId = "show_PERM", "PERM", value = TRUE, width = NULL),
-      checkboxInput(inputId = "show_H1B", "H-1B", value = TRUE, width = NULL),
-      checkboxInput(inputId = "show_H1B1_Singapore", "H-1B1 Singapore", value = TRUE, width = NULL),
-      checkboxInput(inputId = "show_H1B1_Chile", "H-1B1 Chile", value = TRUE, width = NULL),
-      checkboxInput(inputId = "show_E3", "E-3 Australia", value = TRUE, width = NULL)
+      # Copy the line below to make a select box 
+      selectInput("year", label = "Year", 
+                  choices = list("2016" = 16,
+                                 "2015" = 15,
+                                 "2014" = 14,
+                                 "2013" = 13,
+                                 "2012" = 12,
+                                 "2011" = 11, 
+                                 "2010" = 10,
+                                 "2009" = 9,
+                                 "2008" = 8),
+                  selected = 16),
+      hr(),
+      #sliderInput(inputId = "x_range", 
+                  #label = "Wage range:",
+                  #min = 0, max = 250000, value = c(0, 250000)),
+      #hr(),
+      selectInput("visaClassification", label = "Visa Classification", 
+                  choices = list("PERM" = "E",
+                                 "H-1B1 Chile" = "B",
+                                 "H-1B1 Singapore" = "C",
+                                 "E-3 Australia" = "D",
+                                 "H-1B" = "A"),
+                  selected = "E")
     ),
    
     mainPanel(

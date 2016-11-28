@@ -8,7 +8,7 @@ library(stringr)
 library(lazyeval)
 library(dplyr)
 
-final.shiny <- readRDS('ShinyDatset.rds')
+wages <- readRDS('ShinyDatasetAgg.rds')
 
 # NumberFormatDollars
 nfd <- function(x) { return(paste("$", format(x, digits=2, nsmall=0,  big.mark=","), sep="")) }
