@@ -1,15 +1,16 @@
 # Use this for "scratch paper" - trying things out, jotting down ideas, exploring data.
 
+
 library(data.table)
 library(mgcv)
 library(bit64)
 library(ggplot2)
 library(dplyr)
 library(rjags)
+#setwd('/home/bdetweiler/src/Data_Science/stat-8416-final-project/') 
 source("DBDA2Eprograms/DBDA2E-utilities.R")
 
 options(scipen=999)
-
 visas <- readRDS('H1BVisas.rds')
 
 str(visas)
@@ -461,7 +462,69 @@ final.shiny <- readRDS('shiny/ShinyDatset.rds')
       coord_flip() +
       labs(x = "State", y = "Median Wage")
 
+##############################################################################
+#    Analytics
+##############################################################################
 
+attorneys <- visas %>%
+  filter(!is.na(agent_attorney_first_name)) %>%
+  filter(agent_attorney_state == 'DC') %>%
+  filter(status == 'CERTIFIED') %>%
+  select(fy, 
+         employer_state, 
+         worksite_state, 
+         total_workers, 
+         status, 
+         agent_attorney_first_name, 
+         agent_attorney_last_name, 
+         agent_attorney_city, 
+         agent_attorney_state) %>%
+    group_by(agent_attorney_last_name, agent_attorney_first_name, agent_attorney_city, agent_attorney_state, status) %>%
+    summarise(n=n()) %>%
+    arrange(desc(n))
+
+# Only take top attorney
+attorneys <- attorneys[1,] 
+
+for (i in state.abb) {
+  top.attorney <- visas %>%
+    filter(!is.na(agent_attorney_first_name)) %>%
+    filter(agent_attorney_state == i) %>%
+    filter(status == 'CERTIFIED') %>%
+    select(fy, 
+           employer_state, 
+           worksite_state, 
+           total_workers, 
+           status, 
+           agent_attorney_first_name, 
+           agent_attorney_last_name, 
+           agent_attorney_city, 
+           agent_attorney_state) %>%
+      group_by(agent_attorney_last_name, agent_attorney_first_name, agent_attorney_city, agent_attorney_state, status) %>%
+      summarise(n=n()) %>%
+      arrange(desc(n))
+  
+  # Only take top attorney
+  top.attorney <- top.attorney[1,] 
+ 
+  attorneys <- rbind(attorneys, top.attorney)
+}
+
+attorneys$name <- paste(attorneys$agent_attorney_last_name, attorneys$agent_attorney_state, sep="-")
+attorneys$name
+attorneys$name <-  factor(attorneys$name, levels=attorneys$name[order(attorneys$n)])
+ggplot(attorneys, aes(x=name, y=n)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  labs(title="Top Attorney in Each State (and D.C.)", x="Applications Certified", y="Attorney Name / State")
+    
+unique(attorneys$agent_attorney_state)
+attorneys$agent_attorney_last_name <- gsub("\\W", " ", attorneys$agent_attorney_last_name)
+unique(paste(toupper(attorneys$agent_attorney_first_name), toupper(attorneys$agent_attorney_last_name)))
+table(attorneys$agent_attorney_last_name)
+
+visas.samples <- visas[sample(nrow(visas), 2000), ]
+head(visas.samples    )
 visas.reduced <- visas %>%
   select(normalized_wage, normalized_prevailing_wage, fy) %>%
   filter(normalized_wage < 500000) %>%
@@ -469,61 +532,216 @@ visas.reduced <- visas %>%
   filter(!is.na(normalized_wage))
 
 saveRDS(visas.reduced, "visasreduced.rds")
-visas.reduced <- readRDS("visasreduced.rds")
 
-summary(visas.reduced) 
-hist(visas.reduced$normalized_wage, freq=F, xlim=c(0, 250000), breaks = 100)
+##############################################################################
+#    Bayesian Analysis
+##############################################################################
+
+visas.reduced <- readRDS("visasreduced.rds")
+visas.reduced <- visas.reduced %>%
+  filter(!is.na(normalized_prevailing_wage)) %>%
+  filter(normalized_prevailing_wage > 0)
+
+visas.reduced.samples <- visas.reduced[sample(nrow(visas.reduced), 1000), ]
+visas.reduced.normalized_wage <- visas.reduced.samples$normalized_wage
+visas.reduced.normalized_prevailing_wage <- visas.reduced.samples$normalized_prevailing_wage
+
+
+hist(log(visas.reduced$normalized_wage), 
+     freq = FALSE, 
+     xlim = c(9, 15), 
+     breaks = 100, 
+     col = rgb(0, 0, 1), 
+     main = "Density of Normalized Wages (Population overlayed by Sample)",
+     xlab = "Noramlized Wage")
+
+
+hist(visas.reduced.normalized_wage, 
+     freq = FALSE, 
+     xlim = c(0, 250000), 
+     breaks = 100, 
+     col = rgb(1, 0, 0, 1/3), 
+     add = TRUE)
+
+hist(visas.reduced$normalized_prevailing_wage,
+     freq = FALSE, 
+     xlim = c(0, 250000), 
+     breaks = 100, 
+     col = rgb(0, 0, 1), 
+     main = "Density of Normalized Wages (Population overlayed by Sample)",
+     xlab = "Noramlized Wage")
+hist(visas.reduced.normalized_prevailing_wage, 
+     freq = FALSE, 
+     xlim = c(0, 250000), 
+     breaks = 100, 
+     col = rgb(1, 0, 0, 1/3), 
+     add = TRUE)
 
 modelString ="
 model {
-  for( i in 1 : N ) {
-    y[i] ~ dlnorm(muOfLogY, tau) 
+  for (i in 1:N) {
+    y[i] ~ dlnorm(muOfLogY, tauOfY) 
+    x[i] ~ dlnorm(muOfLogX, tauOfX)
   }
 
-  tau <- 1 / pow(sigmaOfLogY, 2)
+  tauOfY <- 1 / pow(sigmaOfLogY, 2)
+  tauOfX <- 1 / pow(sigmaOfLogX, 2)
 
-  sigmaOfLogY ~ dunif(0.001 * sdOfLogY, 1000 * sdOfLogY )
+  sigmaOfLogY ~ dunif(0.001 * sdOfLogY, 1000 * sdOfLogY)
+  sigmaOfLogX ~ dunif(0.001 * sdOfLogX, 1000 * sdOfLogX)
+
   muOfLogY ~ dnorm(meanOfLogY, 0.001 * (1 / pow(sdOfLogY, 2)))
+  muOfLogX ~ dnorm(meanOfLogX, 0.001 * (1 / pow(sdOfLogX, 2)))
+
   muOfY <- exp(muOfLogY + (pow(sigmaOfLogY, 2) / 2))
-  modeOfY <- exp(muOfLogY - pow(sigmaOfLogY, 2))
+  muOfX <- exp(muOfLogX + (pow(sigmaOfLogX, 2) / 2))
+
   sigmaOfY <- sqrt(exp(2 * muOfLogY + pow(sigmaOfLogY, 2)) * (exp(pow(sigmaOfLogY, 2)) - 1))
+  sigmaOfX <- sqrt(exp(2 * muOfLogX + pow(sigmaOfLogX, 2)) * (exp(pow(sigmaOfLogX, 2)) - 1))
+
+  modeOfY <- exp(muOfLogY - pow(sigmaOfLogY, 2))
+  modeOfX <- exp(muOfLogX - pow(sigmaOfLogX, 2))
+
+  deltaMu <- muOfX - muOfY
 }
 "
 
+
 writeLines(modelString, con="wages.jags")
 
-trueM <- mean(visas.reduced$normalized_wage)
-trueSD <- sd(visas.reduced$normalized_wage)
+trueMy <- mean(visas.reduced$normalized_wage)
+trueSDy <- sd(visas.reduced$normalized_wage)
+trueMx <- mean(visas.reduced$normalized_prevailing_wage)
+trueSDx <- sd(visas.reduced$normalized_prevailing_wage)
 
+log(visas.reduced.normalized_wage - mean(visas.reduced.normalized_wage) / 
+      (sd(visas.reduced.normalized_wage) * trueSDy + trueMy))
 
-LogY <- log((visas.reduced$normalized_wage - mean(visas.reduced$normalized_wage)) / sd(visas.reduced$normalized_wage) * trueSD + trueM)
+LogY <- log((visas.reduced.normalized_wage - mean(visas.reduced.normalized_wage)) / 
+              sd(visas.reduced.normalized_wage) * trueSDy + trueMy)
 
-y = exp(LogY)
+LogX <- log(visas.reduced.normalized_prevailing_wage - mean(visas.reduced.normalized_prevailing_wage) /
+  (sd(visas.reduced.normalized_prevailing_wage) * trueSDx + trueMx))
+
+y <- exp(LogY)
+x <- exp(LogX)
 
 dataList <- list(y = y,
-                 N = length(visas.reduced$normalized_wage),
-                 meanOfLogY=mean(LogY) ,
-                 sdOfLogY = sd(LogY))
+                 x = x,
+                 N = length(visas.reduced.normalized_wage),
+                 meanOfLogY = mean(LogY),
+                 sdOfLogY = sd(LogY),
+                 meanOfLogX = mean(LogX),
+                 sdOfLogX = sd(LogX))
 
 wages.model = jags.model(file="wages.jags", 
                              data=dataList,
                              n.chains=4)
 
-update(wages.model, n.iter=2000)
+update(wages.model, n.iter=1000000)
 
-wages.samp <- coda.samples(wages.model, n.iter=10000, variable.names=c("muOfY", "modeOfY", "sigmaOfY"), thin=1)
-summary(wages.samp)
-wages.samp.M <- as.matrix(wages.samp)
+wages.samples <- coda.samples(wages.model, 
+                              n.iter=500000, 
+                              variable.names=c("muOfY", 
+                                               "modeOfY", 
+                                               "sigmaOfY", 
+                                               "muOfX",
+                                               "modeOfX",
+                                               "sigmaOfX",
+                                               "deltaMu"), 
+                              thin=5)
+
+summary(wages.samples)
+saveRDS(wages.samples, 'wages.samples.rds')
+wages.samp.M <- as.matrix(wages.samples)
+
+hist((-1 * wages.samp.M[,"deltaMu"]), breaks = 100, freq = F)
+wage.minus.prevailing.CI <- quantile(x = (-1 * wages.samp.M[, "deltaMu"]), probs = c(0.025, 0.975))
+wage.minus.prevailing.CI
+abline(v=c(wage.minus.prevailing.CI[[1]], wage.minus.prevailing.CI[[2]]), col = "red")SD
+
+hist(wages.samp.M[,"muOfX"], breaks = 100, freq = F)
 
 
-diagMCMC(codaObject = ratsSamples, parName="alpha")
-diagMCMC(codaObject = ratsSamples, parName="beta")
-diagMCMC(codaObject = ratsSamples, parName="y72")
-diagMCMC(codaObject = ratsSamples, parName="theta72")
+head(wages.samp.M)
+
+#diagMCMC(codaObject = wages.samples, parName="muOfY")
+
+log(sd(visas.reduced$normalized_wage))
+##### Checking samples vs. population
+hist(visas.reduced$normalized_wage, 
+     freq = FALSE, 
+     xlim = c(0, max(visas.reduced$normalized_wage)), 
+     breaks = 100, 
+     col = rgb(0, 0, 1), 
+     main = "Density of Normalized Wages (Population overlayed by Sample)",
+     xlab = "Noramlized Wage")
+
+newY <- rlnorm(n = length(wages.samp.M[, "muOfY"]), meanlog = log(mean(wages.samp.M[, "muOfY"]))-0.18, sdlog = (sd(LogY)-0.08 ))
+#newY <- rlnorm(n = length(wages.samp.M[, "muOfY"]), meanlog = 11, sdlog = 1.34)
+summary(newY)
+hist(newY,
+     freq = FALSE, 
+     breaks = 100, 
+     col = rgb(1, 0, 0, 1/3), 
+     add = TRUE)
+
+logMuOfY <- log(mean(wages.samp.M[,"muOfY"]))
+exp(logMuOfY + .)
+
+muCI <- quantile(wages.samp.M[, "muOfY"], probs =c(0.025, 0.975))
+
+logSdOfY <- log(mean(wages.samp.M[,"sigmaOfY"]))
+logSdOfY
+logSdOfY <- log(mean(wages.samp.M[,"sigmaOfY"]))
+logSdOfY
+
+sample.vals.lower <- rlnorm(n=10000, meanlog = log(muCI[[1]]), sdlog = 1)
+sample.vals.upper <- rlnorm(n=10000, meanlog = log(muCI[[2]]), sdlog = 1)
+
+d <- density(sample.vals.lower,
+        adjust = 1,
+        kernel = c("epanechnikov"))
+
+polygon(d, col=rgb(1, 0, 0, 1/3))
+
+d <- density(sample.vals.upper,
+        adjust = 1,
+        kernel = c("epanechnikov"))
+
+polygon(d, col=rgb(0, 1, 0, 1/3))
+
+summary(visas.reduced$normalized_prevailing_wage)
+hist(visas.reduced$normalized_prevailing_wage,
+     freq = FALSE, 
+     breaks = 100, 
+     col = rgb(1, 0, 0, 1/4), 
+     add = TRUE)
+
+hist(log(visas.reduced$normalized_wage), 
+     freq = FALSE, 
+     xlim = c(9, 15), 
+     breaks = 100, 
+     col = rgb(0, 0, 1), 
+     main = "Density of Normalized Wages (Population overlayed by Sample)",
+     xlab = "Noramlized Wage")
+
+log(sqrt(mean(wages.samp.M[,"sigmaOfY"])))
+
+x <- seq(0, 15, length=1000)
+hx <- dnorm(x, mean = 11.2, sd = .3)
+            #meanlog = log(mean(wages.samp.M[,"muOfY"])), sdlog = log(mean(wages.samp.M[,"sigmaOfY"])))
+hx
+exp(11.2)
+exp(.3)
+summary(hx)
+colors <- c("red")
+lines(x, hx, type="l", col="red")
 
 
-hist(ratsSamples.M[,"lnx"], breaks=50, freq=F)
-hist(ratsSamples.M[,"beta"], breaks=50, freq=F)
 
-contour(u2, v2, dens2, levels = contours, drawlabels = FALSE, xlim=c(-2.2, -1), ylim=c(1, 5))
-points(ratsSamples.M[,"lnx"], ratsSamples.M[,"lny"], col="red", pch=".")
+
+# Glassdoor Data
+# <a href='https://www.glassdoor.com/index.htm'>powered by <img src='https://www.glassdoor.com/static/img/api/glassdoor_logo_80.png' title='Job Search' /></a>
+
+

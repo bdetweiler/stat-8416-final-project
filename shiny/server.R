@@ -1,104 +1,55 @@
 shinyServer(function(input, output) {
  
-    PermSelect <- reactive({ 
-      if(input$show_PERM){
-        "PERM"
-      }
-      else { NULL }  
-    })
-    
-    H1BSelect <- reactive({ 
-      if(input$show_H1B){
-        "H-1B"
-      }
-      else { NULL }  
-    })
-    
-    H1B1SingaporeSelect <- reactive({ 
-      if(input$show_H1B1_Singapore){
-        "H-1B1 Singapore"
-      }
-      else { NULL }  
-    })
-    
-    H1B1ChileSelect <- reactive({ 
-      if(input$show_H1B1_Chile){
-        "H-1B1 Chile"
-      }
-      else { NULL }  
-    })
-    
-    E3Select <- reactive({ 
-      if(input$show_E3){
-        "E-3 Australian"
-      }
-      else { NULL }  
-    })
-    
-    print("START=========================================================")
+  print("START=========================================================")
 
     
   # US Map 
   output$choro <- renderPlotly({
     
-    # Input conditionals
-    final.shiny.map <- final.shiny %>%
-                       dplyr::filter(normalized_wage > input$x_range[1]) %>%
-                       dplyr::filter(normalized_wage < input$x_range[2]) %>%
-                       dplyr::filter(visa_class %in% PermSelect() |
-                                     visa_class %in% H1BSelect() | 
-                                     visa_class %in% H1B1ChileSelect() |
-                                     visa_class %in% H1B1SingaporeSelect() |
-                                     visa_class %in% E3Select())
+    print("years in dataset:") 
+    print(unique(wages$fy))
    
-    print("MAP: filtered by visa class and income range")    
-    print(sort(sapply(ls(), function(x){ object.size(get(x)) })) )
+    print("filtering on year:") 
+    print(input$year)
     
-    # Final aggregation 
-    final.shiny.map <- final.shiny.map %>% 
-                       group_by(employer_state, visa_class) %>%           #  We'll also allow grouping by fy and visa_class
-                       summarise(med = median(normalized_wage), 
-                                 mean = mean(normalized_wage), 
-                                 min = min(normalized_wage),
-                                 max = max(normalized_wage),
-                                 n = n())
+    # Input conditionals
+    wages.map <- wages %>%
+       dplyr::filter(fy == as.numeric(input$year))
     
-    print("MAP: aggregated data")
-    print(sort(sapply(ls(), function(x){ object.size(get(x)) })) )
+    print(dim(wages.map))
+    print(unique(wages.map$visa_class))
+    print(unique(wages.map$fy))
+   
+    print("filtering on visa classification:") 
+    print(input$visaClassification)
     
-    final.shiny.map$employer_state_abb <- final.shiny.map$employer_state
-    for (state in state.name) {
-      final.shiny.map$employer_state_abb[which(tolower(final.shiny.map$employer_state) == tolower(state))]  <- 
-        state.abb[tolower(state.name) %in% tolower(state)]
+    wages.map <- wages.map %>%
+       dplyr::filter(visa_class == input$visaClassification)
+ 
+    print(dim(wages.map))
+    print(wages.map[1,])
+    
+    if (dim(wages.map)[1] > 0) {
+      # give state boundaries a white border
+      l <- list(color = toRGB("white"), width = 2)
+      # specify some map projection/options
+      g <- list(scope = 'usa',
+                projection = list(type = 'albers usa'),
+                showlakes = TRUE,
+                lakecolor = toRGB('white'))
+      
+      plot_geo(wages.map, locationmode = 'USA-states') %>%
+        add_trace(z = ~med_wage, 
+                  text = ~hover, 
+                  locations = ~employer_state_abb,
+                  color = ~med_wage, 
+                  colors = 'Blues') %>%
+        colorbar(title = "Median wage USD") %>%
+        layout(title = 'Median Foreign Worker Wage by State<br />(Hover for breakdown)',
+               geo = g)
+    } else {
+      renderPrint({ "No Data" })
     }
-
-    final.shiny.map$hover <- with(final.shiny.map, paste(employer_state, "<br />",
-                                                         "Wages observed", nf(n), "<br />",
-                                                         "Mean wage", nfd(mean), "<br />", 
-                                                         "Median wage", nfd(med), "<br />",
-                                                         "Minimum wage", nfd(min), "<br />",
-                                                         "Maximum wage", nfd(max)))
-    
-    print("MAP: added hover")
-    print(sort(sapply(ls(), function(x){ object.size(get(x)) })) )
-    
-    # give state boundaries a white border
-    l <- list(color = toRGB("white"), width = 2)
-    # specify some map projection/options
-    g <- list(scope = 'usa',
-              projection = list(type = 'albers usa'),
-              showlakes = TRUE,
-              lakecolor = toRGB('white'))
-    
-    plot_geo(final.shiny.map, locationmode = 'USA-states') %>%
-      add_trace(z = ~med, 
-                text = ~hover, 
-                locations = ~employer_state_abb,
-                color = ~med, 
-                colors = 'Blues') %>%
-      colorbar(title = "Median wage USD") %>%
-      layout(title = 'Median Foreign Worker Wage by State<br />(Hover for breakdown)',
-             geo = g)
 
   })
   
@@ -133,23 +84,20 @@ shinyServer(function(input, output) {
     print(title)
     
     # Input conditionals
-    final.shiny.dist <-final.shiny %>%
-                       dplyr::filter(normalized_wage > input$x_range[1]) %>%
-                       dplyr::filter(normalized_wage < input$x_range[2]) %>%
-                       dplyr::filter(employer_state %in% states) %>%
-                       dplyr::filter(visa_class %in% PermSelect() |
-                                     visa_class %in% H1BSelect() | 
-                                     visa_class %in% H1B1ChileSelect() |
-                                     visa_class %in% H1B1SingaporeSelect() |
-                                     visa_class %in% E3Select())
+    #final.shiny.dist <-final.shiny %>%
+                       #dplyr::filter(employer_state %in% states) %>%
+                       #dplyr::filter(visa_class %in% PermSelect() |
+                                     #visa_class %in% H1BSelect() | 
+                                     #visa_class %in% H1B1ChileSelect() |
+                                     #visa_class %in% H1B1SingaporeSelect() |
+                                     #visa_class %in% E3Select())
    
-    print("DIST: filter by class")
-    print(sort(sapply(ls(), function(x){ object.size(get(x)) })) )
     
-    ggplot(final.shiny.dist, aes(normalized_wage, color=visa_class, fill=visa_class)) +
-      geom_density(alpha = 0.1) +
-       scale_x_continuous(labels = comma) +
-       scale_y_continuous(labels = comma) +
-      labs(title=title, x="Wage", y="Density")
+    #ggplot(final.shiny.dist, aes(normalized_wage, color=visa_class, fill=visa_class)) +
+      #geom_density(alpha = 0.1) +
+       #scale_x_continuous(labels = comma) +
+       #scale_y_continuous(labels = comma) +
+      #labs(title=title, x="Wage", y="Density")
+    print("DONE")
   })
 })
