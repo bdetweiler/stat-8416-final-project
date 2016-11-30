@@ -1,0 +1,42 @@
+Introduction
+  - start with motivation that triggers interest
+  - do some literature review, provide reference if anybody did related work.
+  - describe the problems and its importance
+  - provide a summary of what the following section will discuss and how they touch the problem
+
+Describe data
+  - exact source of data (should give links or exact reference)
+  - Is the data from multiple sources?
+  - is it publicly available?
+  - variables in the data
+  - what was the primary aim of data collection
+  - how this data is useful for your current analysis
+  - how did you clean and prepare data
+
+Include fact and figures
+  - show tables of summary (when possible) with caption
+  - show figures with caption
+  - in the text, refer to those tables and figures
+  - there should be a reason why the figures/tables are included. explain it in the sections.
+  - graph/plot should be resized to fit into text properly, avoid using too big/small plot
+  - the axis, table column, model variables should be labelled properly in the context of the data
+  - font of text in the plot should be big enough to read and smaller than or equal to the main text font
+
+About R codes
+  - try to avoid including R codes
+  - Include R codes in the report if absolutely necessary. We can always review your code in .Rnw file.
+  - Don't expect that reader will understand what you did by reading your R codes
+  - Describe in the texts what you did in R in such a way that other people can reproduce it in any language
+
+The main sections should include information below followed by a well written abstract
+  - Introduction
+  - Data
+  - Exploratory study and/or modeling setup
+  - Results/findings and data products or models
+  - Conclusion and future direction of the work
+
+Finally 
+  - the project should tell a complete story which is useful and interesting. 
+  - can you tell that story in a sentence? Summarize that as a title of the project
+  - overall the report should be nice, clean and professional looking
+     - page or picture size should be set up properly 
