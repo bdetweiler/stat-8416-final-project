@@ -6,6 +6,7 @@
 \usepackage{booktabs}
 \usepackage{hyperref}
 \usepackage{titlesec}
+\usepackage{amsmath}
 
 \setcounter{secnumdepth}{4}
 
@@ -20,7 +21,7 @@
 
 \begin{abstract}
 
-Foreign born workers make up 17\% of the United States workforce. In 2014, nearly one million foreign nationals became lawful permanent residents in the United States. Of those one million, 140,000 came through visas which are allocated to employment based residency. Where are these workers, and what do the demographics look like? How does each company's compensation measure up? Here, we use statistical analysis and business analytics to examine visa application data from the U.S. Department of Labor from 2008 to 2016. We intend to create an interactive data product that will make this publicly available information more accessible to the students who are entering the workforce, as well as to US citizens and permanent residents. This will empower them to competitively position themselves in the job market by making more informed decisions.
+Foreign born workers make up 17\% of the United States workforce. In 2014, nearly one million foreign nationals became lawful permanent residents in the United States. Of those one million, 140,000 came through visas which are allocated to employment based residency. Where are these workers, and what do the demographics look like? How does their compensation measure up? Here, we use statistical analysis to examine visa application data from the U.S. Department of Labor from 2008 to 2016. We intend to create an interactive data product that will make this publicly available information more accessible to the students who are entering the workforce, as well as to US citizens and permanent residents. This will empower them to competitively position themselves in the job market by making more informed decisions.
 
 % Not sure if we need to cite sources in the abstract, but here they are if we need them:
 % 17% of workforce: 
@@ -39,7 +40,6 @@ Foreign born workers make up 17\% of the United States workforce. In 2014, nearl
 <<echo=FALSE, warning=FALSE, error=FALSE, message=FALSE>>=
 # Include necessary libraries
 library(data.table)
-library(dplyr)
 library(mgcv)
 library(bit64)
 library(ggplot2)
@@ -50,6 +50,7 @@ library(choroplethrMaps)
 library(DescTools)
 library(tidyr)
 library(tcltk)
+library(dplyr)
 
 # convenience function to format currency
 digits.format <- function(x, sci.digits = 2) { 
@@ -157,25 +158,26 @@ Finally, a unique row ID was added to each row.
 
 This cleaned data was saved as an RDS file before moving on to exploratory data analysis.
 
-\subsection{Geolocation data}
+% NOTE: As of yet, we are only using data at the state level (choropleth maps).
+% \subsection{Geolocation data}
 
-Another RDS file (PermEmpMapsdat.rds) was created with summarized employer name address, city, state and zip codes order by number or perm applications processed and by their mean salary.
-This dataset would give us which employer sponsors most employees for permanent full time employment as well as who pays more. 
-Another use of this dataset is in geocoding. 
+% Another RDS file (PermEmpMapsdat.rds) was created with summarized employer name address, city, state and zip codes order by number or perm applications processed and by their mean salary.
+% This dataset would give us which employer sponsors most employees for permanent full time employment as well as who pays more. 
+% Another use of this dataset is in geocoding. 
 
-In order to get geocodes for employer address we decided to go with a distinct employer addresses in the order of most common PERM application employer who also pays the highest wages.
+% In order to get geocodes for employer address we decided to go with a distinct employer addresses in the order of most common PERM application employer who also pays the highest wages.
 
 % I noticed this approach did not work - After 24 hours, I still got rate limit reached. I had to restart the script.
 % Also, since we know it is a 24 hour limit, why not make it sleep for 24 hours?
-As we are restricted to 2,500 geocode requests from Google Maps in a 24 hour period, we decided to create a program that continuously runs until the rate limit is encountered, sleeps, and wakes up every hour trying to hit the Google server to look for the addresses.
+% As we are restricted to 2,500 geocode requests from Google Maps in a 24 hour period, we decided to create a program that continuously runs until the rate limit is encountered, sleeps, and wakes up every hour trying to hit the Google server to look for the addresses.
 
-This program collects all the addresses and store them in a temporary file and update them again based on their index in a main file. The program is designed to run at multiple locations for different index ranges to collect as much address as possible.
+% This program collects all the addresses and store them in a temporary file and update them again based on their index in a main file. The program is designed to run at multiple locations for different index ranges to collect as much address as possible.
 
 \subsection{Shortcomings}
 
 As mentioned in the previous section, because the data is not homogeneous, there are bound to be disparities. Missing data - columns which are not found across all spreadsheets - is the biggest issue. We can make assumptions when there is sparse data, but it would not be prudent to make assumptions where there is no data. For this reason, we fully disclose the absence data where necessary.
 
-All of the data has been entered by humans at some point, so there are likely many human-generated errors. Some of these can be seen as outliers. Particularly in the LCA 2008 and pre-iCERT 2009 data, the wage unit is most certainly incorrect in some spots. For example, some wages are listed at \$500 per hour, but the intended unit may have been per week. It is not possible to fix this pro grammatically though, because there are, in fact, some jobs that pay \$500 per hour (CEOs, for instance). This data must be dealt with in one of two ways. They can either be corrected by hand inspection of outliers, or outliers can be removed completely. This results in a slight loss of fidelity. Extremely high paying jobs, such as CEO or physician may not be displayed.
+All of the data has been entered by humans at some point, so there are likely many human-generated errors. Some of these can be seen as outliers. Particularly in the LCA 2008 and pre-iCERT 2009 data, the wage unit is most certainly incorrect in some spots. For example, some wages are listed at \$500 per hour, but the intended unit may have been per week. It is not possible to fix this programmatically though, because there are, in fact, some jobs that pay \$500 per hour (CEOs, for instance). This data must be dealt with in one of two ways. They can either be corrected by hand inspection of outliers, or outliers can be removed completely. This results in a slight loss of fidelity. Extremely high paying jobs, such as CEO or physician may not be displayed.
 
 Another issue is the switch from U.S. Citizenship and Immigration Services Dictionary of Occupational Titles (DOT) codes in 2008 and pre-iCERT 2009 data, to the North American Industry Classification System (NAICS) codes. The DOT codes are three digits and fairly high-level, where as the NAICS codes are hierarchical, with the first two being the industry, and the specification of the job title narrowing with up to six digits. For this reason, it is difficult to get consistent job titles across years. 
 
@@ -198,6 +200,32 @@ Here is a sample of unique values in the categorical data:
 \section{Methods}
 
 The numeric data provided by the H-1B and PERM datasets are mostly in the form of wages, both the wage that the employer is offering and the prevailing wage.\footnote{Prevailing wage is defined as the hourly wage, usual benefits and overtime, paid to the majority of workers, laborers, and mechanics within a particular geographic area.} Also of interest, are the number of workers an applicant is filing for, and the implicit number of applications faceted by status and year.
+
+A Bayesian analysis was performed on the H-1B wage data. 
+
+Let $y_i$ denote the normalized wage listed in an LCA application.
+
+Wage data is usually distributed log-normally. Since we do not perport to be experts in visa law or economics, we will make vague assumptions about our prior beliefs. In other words, we will prefer to use relatively flat priors when estimating our parameters.
+
+The parameters of interst are $(\mu, \sigma)$. Thus, the model is described as
+
+\begin{equation}
+\begin{split}
+    y_i &\sim LogNormal(\mu_{\ln{Y}}, \tau) \\
+    \tau &= \frac{1}{\sigma_{\ln{Y}}^2}\\
+    \sigma_{\ln{Y}} &\sim Uniform(0.001 S_{\ln{Y}}, 1000 * S_{\ln{y}} ) \\
+    \mu_{\ln{Y}} &\sim Normal\bigg(\overline{\ln{Y}}, 0.001 \frac{1}{S_{\ln{y}}^2}\bigg)\\
+    \mu_{Y} &= exp\bigg(\mu_{\ln{Y}} + \frac{S_{\ln{Y}}^2}{2}\bigg) \\
+    \sigma_{Y} &= \sqrt{exp(2 * \mu_{\ln{Y}} + \sigma_{\ln{Y}}^2) * (exp(\sigma_{\ln{Y}}^2)) - 1} \\
+\end{split}
+\end{equation}
+
+In the interest of computational time, we will seek to reduce our dataset while still maintaining a representative distribution.
+
+For this, we take a random sample of 1,000 from the dataset and overlay the data to see that the sample is representative of the population.
+
+
+
 
 \subsection{Data product}
 
@@ -223,7 +251,7 @@ Box plots, histograms, bar charts and heat maps are some of those plots we will 
 
 \subsection{Prevailing Wage}
 
-It would be interesting to see how many workers are getting approved for H-1B visas over the years. We can see this by plotting the number of workers within each visa status category (Certified, Denied, and Withdrawn). 
+It would be interesting to see how many workers are getting approved for H-1B visas over the years. We can see this by plotting the number of workers within each visa status category (Certified, Denied, and Withdrawn). \ref{fig:worker-application-status}
 
 <<echo=FALSE, fig.height=4, fig.width=6, warning=FALSE, error=FALSE>>=
 options(scipen=999)
@@ -237,24 +265,26 @@ visas.by.status <- select(visas, fy, total_workers, status) %>%
     dplyr::summarise(tot = sum(total_workers, na.rm = TRUE))
 
 visas.by.status$status <- as.factor(visas.by.status$status)
+@
 
+<<worker-application-status, fig.cap='LCA status from 2008 - 2016', fig.width=6, fig.height=4, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=  
 ggplot(visas.by.status, aes(x = status, y = tot))  +
   geom_bar(stat = "identity") +
   scale_x_discrete(labels=(c("C", "D", "W"))) +
   facet_grid(~ fy) +
-  labs(title = "Number of workers by application status, 2008 - 2016", x = "Application Status", y = "Numer of workers requested")
+  labs(title = "Number of workers by application status",
+           x = "Application Status (Certified, Denied, Withdrawn)", 
+           y = "Numer of workers requested") +
+  theme(axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size=12))
 
 @
 
-Clearly, we can see huge outliers in 2010 and 2013 that don't seem to fit the data. Upon investigation, it is safe to say that all H-1B applications requesting over 1,000 total workers are either denied or withdrawn. These can be safely ignored.
+Clearly, we can see huge outliers in 2010 and 2013 that don't seem to fit the data. Upon investigation, it is safe to say that all H-1B applications requesting over 1,000 total workers are either denied or withdrawn. These can be safely ignored. \ref{fig:outliers-by-status}
 
-<<echo=FALSE>>=
-# In case we want to investigate the outliers
-# case.numbers <- visas[which(visas$total_workers %in% sort(visas$total_workers, decreasing = T)[1:20])]$case_number
-# case.numbers
-@ 
 
-<<echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
+<<outliers-by-status, fig.cap='Outliers in number of workers requested can be attributed to human error', fig.width=6, fig.height=4, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>= 
+
 # Let's look at the statuses of the higher ones and if they were denied, we'll exclude them. 
  
 outliers.by.status <- select(visas, fy, total_workers, status) %>%
@@ -262,7 +292,11 @@ outliers.by.status <- select(visas, fy, total_workers, status) %>%
     filter(total_workers > 1000) %>%
     arrange(total_workers, fy)
   
-kable(outliers.by.status, format = "latex", caption = "Applications requesting over 1000 workers", booktabs = TRUE)
+kable(outliers.by.status, 
+      col.names = c("Year", "Workers Requested", "Status"),
+      format = "latex", 
+      caption = "Applications requesting over 1000 workers", 
+      booktabs = TRUE)
 @
 
 Once we remove all requests for more than 1,000 workers, we can start to see a pattern. The number of denied and withdrawn applications remains fairly constant, but the number of certified workers shows a steady rise after 2010, most likely due to a strengthening economy and returning jobs. \cite{BLS}
@@ -407,49 +441,85 @@ Under the PERM data, we are seeing a higher than average salary from 2008-2013 a
 # Grouping by study major starts here
 
 
-df = filter(dat_all, YEAR>=2015)%>% filter(CASE_STATUS %in% c('CERTIFIED','CERTIFIED-EXPIRED') )%>% 
+df <- filter(dat_all, YEAR>=2015)%>% filter(CASE_STATUS %in% c('CERTIFIED','CERTIFIED-EXPIRED') )%>% 
   group_by(JOB_INFO_MAJOR) %>% dplyr::summarise(count_rec = n(), salary = sum(normalized_wage, na.rm = TRUE)) %>%  
   arrange(desc(count_rec))
 
 # write.csv(distinct_df, file="Major.csv")
 
-df <- sqldf("SELECT COUNT_REC, JOB_INFO_MAJOR, salary, 
-case
-      
-            	  when (JOB_INFO_MAJOR like 'DATA SCIENCE%' OR JOB_INFO_MAJOR like 'DATA SC%' OR JOB_INFO_MAJOR like 'DATA ANALY%') then 'DATA SCIENCE'
-      when ((JOB_INFO_MAJOR like '%COMP%SC%' OR JOB_INFO_MAJOR like '%ENGG%') AND (JOB_INFO_MAJOR like '%MATH%')) then   'ENGG_MATH'
-             when ((JOB_INFO_MAJOR like '%COMP%SC%' OR JOB_INFO_MAJOR like '%ENGG%') AND (JOB_INFO_MAJOR like '%RELATE%' OR JOB_INFO_MAJOR like '%ANY%')) OR (JOB_INFO_MAJOR = 'ENGINEERING') then 'ANY ENGG'
-             when (JOB_INFO_MAJOR like 'COMPUTER SCIENCE%' OR JOB_INFO_MAJOR like 'INFORMATION TECHNOLOGY%' OR JOB_INFO_MAJOR like 'SOFTWARE ENGINEERING%' OR JOB_INFO_MAJOR like 'COMPUTER ENGINEERING%' OR JOB_INFO_MAJOR like 'COMPUTERS') then 'COMPUTER SCIENCE'
-             when (JOB_INFO_MAJOR like 'BUSINESS%' OR JOB_INFO_MAJOR like 'MANAGEMENT%' OR JOB_INFO_MAJOR = 'MBA') then 'MANAGEMENT'
-             when ((JOB_INFO_MAJOR like 'MECH%' OR JOB_INFO_MAJOR like '%ELECTR%' OR JOB_INFO_MAJOR like '%ELECTRO%' OR JOB_INFO_MAJOR like '%CHEM%' OR JOB_INFO_MAJOR like '%CIVIL%' OR JOB_INFO_MAJOR like 'PETRO%'   OR JOB_INFO_MAJOR like '%INDUS%') AND (JOB_INFO_MAJOR like '%ENGINEERING')) then 'OTHER ENGINEERING'
-             when (JOB_INFO_MAJOR like '%ACCOUNTING%' OR JOB_INFO_MAJOR like '%FINANCE%' OR JOB_INFO_MAJOR like '%ECONOMICS%' OR JOB_INFO_MAJOR LIKE 'ACCOUNTA%') then  'FINANCE'
-             when (JOB_INFO_MAJOR like 'MATHEMATICS%' OR JOB_INFO_MAJOR like 'OPERATIONS RESEARCH%') then  'MATHEMATICS'
-             when (JOB_INFO_MAJOR like 'COMPUTER SCIENCE%' OR JOB_INFO_MAJOR like 'MATHEMATICS%'  ) then  'OTHER STEM'
-             when (JOB_INFO_MAJOR like 'STATISTICS%' OR JOB_INFO_MAJOR like 'BIOSTATIS%') then 'STATISTICS'
-             when (JOB_INFO_MAJOR like 'BIOLOG%' OR JOB_INFO_MAJOR like 'CHEMISTRY%' OR JOB_INFO_MAJOR like 'PHYSICS%' OR JOB_INFO_MAJOR = 'SCIENCE' OR JOB_INFO_MAJOR LIKE 'BIOMEDICAL%') then  'SCIENCE'
-             when (JOB_INFO_MAJOR like '%EDUCATION%' OR JOB_INFO_MAJOR = 'ENGLISH') then	'EDUCATION'
-             when (JOB_INFO_MAJOR like 'MEDICINE%' OR JOB_INFO_MAJOR like 'DENTIST%' OR JOB_INFO_MAJOR like 'NURSING%' OR JOB_INFO_MAJOR like '%MEDICINE%') then  'MEDICAL'
-             when (JOB_INFO_MAJOR like 'ARTS%' OR JOB_INFO_MAJOR like 'FASHION%') then 'ARTS FASHION'
-             when (JOB_INFO_MAJOR like 'LAW%') then 'LAW'
-             when (JOB_INFO_MAJOR like 'MARKETING%') THEN 'MARKETING'
-             when (JOB_INFO_MAJOR like 'ARCHITECTURE%' OR JOB_INFO_MAJOR like '%CONSTRUCTION%') then 'ARCHITECTURE'
-             when (JOB_INFO_MAJOR like 'ENG%' OR JOB_INFO_MAJOR like 'SCI%') THEN 'OTHER STEM'
-      	  
-      
-      ELSE 'OTHER'
+df <- sqldf("SELECT COUNT_REC, 
+                    JOB_INFO_MAJOR, 
+                    salary, 
+               case 
+            	  when (JOB_INFO_MAJOR like 'DATA SCIENCE%'           OR 
+                      JOB_INFO_MAJOR  like 'DATA SC%'                OR 
+                      JOB_INFO_MAJOR  like 'DATA ANALY%')            then 'DATA SCIENCE'
+                when ((JOB_INFO_MAJOR like '%COMP%SC% '              OR 
+                       JOB_INFO_MAJOR like '%ENGG%')                 AND 
+                      (JOB_INFO_MAJOR like '%MATH%'))                then 'ENGG_MATH'
+                when ((JOB_INFO_MAJOR like '%COMP%SC%'               OR 
+                       JOB_INFO_MAJOR like '%ENGG%')                 AND 
+                      (JOB_INFO_MAJOR like '%RELATE%'                OR 
+                       JOB_INFO_MAJOR like '%ANY%'))                 OR 
+                      (JOB_INFO_MAJOR    = 'ENGINEERING')            then 'ANY ENGG'
+                when (JOB_INFO_MAJOR  like 'COMPUTER SCIENCE%'       OR 
+                      JOB_INFO_MAJOR  like 'INFORMATION TECHNOLOGY%' OR 
+                      JOB_INFO_MAJOR  like 'SOFTWARE ENGINEERING%'   OR 
+                      JOB_INFO_MAJOR  like 'COMPUTER ENGINEERING%'   OR 
+                      JOB_INFO_MAJOR  like 'COMPUTERS')              then 'COMPUTER SCIENCE'
+                when (JOB_INFO_MAJOR  like 'BUSINESS%'               OR 
+                      JOB_INFO_MAJOR  like 'MANAGEMENT%'             OR
+                      JOB_INFO_MAJOR     = 'MBA')                    then 'MANAGEMENT'
+                when ((JOB_INFO_MAJOR like 'MECH%'                   OR 
+                      JOB_INFO_MAJOR  like '%ELECTR%'                OR 
+                      JOB_INFO_MAJOR  like '%ELECTRO%'               OR 
+                      JOB_INFO_MAJOR  like '%CHEM%'                  OR 
+                      JOB_INFO_MAJOR  like '%CIVIL%'                 OR 
+                      JOB_INFO_MAJOR  like 'PETRO%'                  OR 
+                      JOB_INFO_MAJOR  like '%INDUS%')                AND 
+                     (JOB_INFO_MAJOR  like '%ENGINEERING'))          then 'OTHER ENGINEERING'
+                when (JOB_INFO_MAJOR  like '%ACCOUNTING%'            OR 
+                      JOB_INFO_MAJOR  like '%FINANCE%'               OR 
+                      JOB_INFO_MAJOR  like '%ECONOMICS%'             OR 
+                      JOB_INFO_MAJOR  like 'ACCOUNTA%')              then 'FINANCE'
+                when (JOB_INFO_MAJOR  like 'MATHEMATICS%'            OR 
+                      JOB_INFO_MAJOR  like 'OPERATIONS RESEARCH%')   then 'MATHEMATICS'
+                when (JOB_INFO_MAJOR  like 'COMPUTER SCIENCE%'       OR
+                      JOB_INFO_MAJOR  like 'MATHEMATICS%')           then 'OTHER STEM'
+                when (JOB_INFO_MAJOR  like 'STATISTICS%'             OR 
+                      JOB_INFO_MAJOR  like 'BIOSTATIS%')             then 'STATISTICS'
+                when (JOB_INFO_MAJOR  like 'BIOLOG%'                 OR 
+                      JOB_INFO_MAJOR  like 'CHEMISTRY%'              OR
+                      JOB_INFO_MAJOR  like 'PHYSICS%'                OR
+                      JOB_INFO_MAJOR     = 'SCIENCE'                 OR
+                      JOB_INFO_MAJOR  like 'BIOMEDICAL%')            then  'SCIENCE'
+                when (JOB_INFO_MAJOR  like '%EDUCATION%'             OR 
+                      JOB_INFO_MAJOR     = 'ENGLISH')                then	'EDUCATION'
+                when (JOB_INFO_MAJOR  like 'MEDICINE%'               OR 
+                      JOB_INFO_MAJOR  like 'DENTIST%'                OR 
+                      JOB_INFO_MAJOR  like 'NURSING%'                OR
+                      JOB_INFO_MAJOR  like '%MEDICINE%')             then  'MEDICAL'
+                when (JOB_INFO_MAJOR  like 'ARTS%'                   OR
+                      JOB_INFO_MAJOR  like 'FASHION%')               then 'ARTS FASHION'
+                when (JOB_INFO_MAJOR  like 'LAW%')                   then 'LAW'
+                when (JOB_INFO_MAJOR  like 'MARKETING%')             then 'MARKETING'
+                when (JOB_INFO_MAJOR  like 'ARCHITECTURE%'           OR
+                      JOB_INFO_MAJOR  like '%CONSTRUCTION%')         then 'ARCHITECTURE'
+                when (JOB_INFO_MAJOR  like 'ENG%'                    OR
+                      JOB_INFO_MAJOR  like 'SCI%')                   then 'OTHER STEM'
+                else 'OTHER'
       END JOB_MAJOR
       
       FROM df
       WHERE JOB_INFO_MAJOR IS NOT NULL
       ORDER BY COUNT_REC DESC
-            
       "
       )
 
-dat=left_join(dat_all, df, by = 'JOB_INFO_MAJOR')
-dat=subset(dat, !is.na(salary) )
+dat <- left_join(dat_all, df, by = 'JOB_INFO_MAJOR')
+dat <- subset(dat, !is.na(salary) )
 
-dat1 = df %>% 
+dat1 <- df %>% 
   dplyr::group_by(JOB_MAJOR) %>% 
   dplyr::summarise(mean_salary=sum(salary)/sum(count_rec), count_rec=sum(count_rec)) %>%
   dplyr::arrange(desc(mean_salary))
@@ -468,10 +538,10 @@ state_by_value$region = tolower(state_by_value$JOB_INFO_WORK_STATE)
 data(state.regions)
 
 state_by_value <- merge(state_by_value, state.regions, by.x  = "region", by.y = "region")
-state_by_value$value = state_by_value$mean_salary
+state_by_value$value <- state_by_value$mean_salary
 state_choropleth(state_by_value, title = "Mean Salary by State",num_colors=1)
 
-state_by_value$value = state_by_value$count
+state_by_value$value <- state_by_value$count
 state_choropleth(state_by_value, title = "Number of Perm by State",num_colors=1)
 
 
@@ -510,6 +580,64 @@ Depending on the methods used to exclude and deal with outliers, it is possible 
 One way to mitigate this in the PERM data is to include only approved applications, which mitigates error introduced in denied cases. 
 We can also consider excluding outliers that are 2 standard deviations away from the mean.
 
+\subsection{Attorneys}
+
+Something that may be of interest to employers is finding a good attorney to help navigate the legal process. The H-1B data lists the names and states of agent attorneys for fiscal years 2015 and 2016. By filtering and summarizing the data, we can see the top attorney for each state (and Washington, D.C.), based on how many Labor Condition Applications have been certified under their name. 
+
+<<echo=FALSE, fig.height=6, fig.width=4>>=
+h1b.visas <- readRDS('./H1BVisas.rds')
+attorneys <- h1b.visas %>%
+  filter(!is.na(agent_attorney_first_name)) %>%
+  filter(agent_attorney_state == 'DC') %>%
+  filter(status == 'CERTIFIED') %>%
+  select(fy, 
+         employer_state, 
+         worksite_state, 
+         total_workers, 
+         status, 
+         agent_attorney_first_name, 
+         agent_attorney_last_name, 
+         agent_attorney_city, 
+         agent_attorney_state) %>%
+    group_by(agent_attorney_last_name, agent_attorney_first_name, agent_attorney_city, agent_attorney_state, status) %>%
+    summarise(n=n()) %>%
+    arrange(desc(n))
+
+# Only take top attorney
+attorneys <- attorneys[1,] 
+for (i in state.abb) {
+  top.attorney <- h1b.visas %>%
+    filter(!is.na(agent_attorney_first_name)) %>%
+    filter(agent_attorney_state == i) %>%
+    filter(status == 'CERTIFIED') %>%
+    select(fy, 
+           employer_state, 
+           worksite_state, 
+           total_workers, 
+           status, 
+           agent_attorney_first_name, 
+           agent_attorney_last_name, 
+           agent_attorney_city, 
+           agent_attorney_state) %>%
+      group_by(agent_attorney_last_name, agent_attorney_first_name, agent_attorney_city, agent_attorney_state, status) %>%
+      summarise(n=n()) %>%
+      arrange(desc(n))
+  
+  # Only take top attorney
+  top.attorney <- top.attorney[1,] 
+ 
+  attorneys <- rbind(attorneys, top.attorney)
+}
+
+attorneys$name <- paste(attorneys$agent_attorney_last_name, attorneys$agent_attorney_state, sep="-")
+attorneys$name <-  factor(attorneys$name, levels=attorneys$name[order(attorneys$n)])
+
+ggplot(attorneys, aes(x=name, y=n)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  labs(title="Top Attorney in Each State", y="Applications Certified", x="Attorney Name / State")
+    
+@
 
 % TODO:
 %\subsection{H-1B vs. PERM}

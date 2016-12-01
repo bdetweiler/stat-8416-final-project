@@ -5,15 +5,14 @@ library(data.table)
 library(mgcv)
 library(bit64)
 library(ggplot2)
-library(dplyr)
 library(rjags)
+library(dplyr)
+
 #setwd('/home/bdetweiler/src/Data_Science/stat-8416-final-project/') 
 source("DBDA2Eprograms/DBDA2E-utilities.R")
 
 options(scipen=999)
 visas <- readRDS('H1BVisas.rds')
-
-str(visas)
 
 visas.by.job <- select(visas, fy, 
                               file_name,
@@ -466,6 +465,7 @@ final.shiny <- readRDS('shiny/ShinyDatset.rds')
 #    Analytics
 ##############################################################################
 
+        
 attorneys <- visas %>%
   filter(!is.na(agent_attorney_first_name)) %>%
   filter(agent_attorney_state == 'DC') %>%
@@ -524,13 +524,13 @@ unique(paste(toupper(attorneys$agent_attorney_first_name), toupper(attorneys$age
 table(attorneys$agent_attorney_last_name)
 
 visas.samples <- visas[sample(nrow(visas), 2000), ]
-head(visas.samples    )
+
 visas.reduced <- visas %>%
   select(normalized_wage, normalized_prevailing_wage, fy) %>%
   filter(normalized_wage < 500000) %>%
   filter(normalized_wage > 0) %>%
   filter(!is.na(normalized_wage))
-
+hist(visas.reduced)
 saveRDS(visas.reduced, "visasreduced.rds")
 
 ##############################################################################
@@ -541,6 +541,10 @@ visas.reduced <- readRDS("visasreduced.rds")
 visas.reduced <- visas.reduced %>%
   filter(!is.na(normalized_prevailing_wage)) %>%
   filter(normalized_prevailing_wage > 0)
+
+unique(visas.reduced$fy)
+
+hist(visas.reduced, breaks = 100, freq=F)
 
 visas.reduced.samples <- visas.reduced[sample(nrow(visas.reduced), 1000), ]
 visas.reduced.normalized_wage <- visas.reduced.samples$normalized_wage
