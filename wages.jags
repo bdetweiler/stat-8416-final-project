@@ -1,0 +1,28 @@
+
+model {
+  for (i in 1:N) {
+    y[i] ~ dlnorm(muOfLogY, tauOfY) 
+    x[i] ~ dlnorm(muOfLogX, tauOfX)
+  }
+
+  tauOfY <- 1 / pow(sigmaOfLogY, 2)
+  tauOfX <- 1 / pow(sigmaOfLogX, 2)
+
+  sigmaOfLogY ~ dunif(0.001 * sdOfLogY, 1000 * sdOfLogY)
+  sigmaOfLogX ~ dunif(0.001 * sdOfLogX, 1000 * sdOfLogX)
+
+  muOfLogY ~ dnorm(meanOfLogY, 0.001 * (1 / pow(sdOfLogY, 2)))
+  muOfLogX ~ dnorm(meanOfLogX, 0.001 * (1 / pow(sdOfLogX, 2)))
+
+  muOfY <- exp(muOfLogY + (pow(sigmaOfLogY, 2) / 2))
+  muOfX <- exp(muOfLogX + (pow(sigmaOfLogX, 2) / 2))
+
+  sigmaOfY <- sqrt(exp(2 * muOfLogY + pow(sigmaOfLogY, 2)) * (exp(pow(sigmaOfLogY, 2)) - 1))
+  sigmaOfX <- sqrt(exp(2 * muOfLogX + pow(sigmaOfLogX, 2)) * (exp(pow(sigmaOfLogX, 2)) - 1))
+
+  modeOfY <- exp(muOfLogY - pow(sigmaOfLogY, 2))
+  modeOfX <- exp(muOfLogX - pow(sigmaOfLogX, 2))
+
+  deltaMu <- muOfX - muOfY
+}
+

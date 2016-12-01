@@ -25,3 +25,4 @@ figure
 /*.xml
 /input_temp_geocoded.rds
 /.RDataTmp
+.httr-oauth
