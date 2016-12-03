@@ -67,6 +67,18 @@ currency.format <- function(x, cents = FALSE) {
   return(paste("\\$", format(x, big.mark=",", digits = 2, nsmall = dig), sep=""))
 }
 
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+Step <- function(x) {
+  rval <- x
+  rval[which(x >= 0)] <- 1
+  rval[which(x < 0)] <- -1
+  return(rval)
+}
+
 @
 
 % \newpage
@@ -249,59 +261,70 @@ Box plots, histograms, bar charts and heat maps are some of those plots we will 
 % If we can generalize here, then we'll have an overview
 % \subsection{Overview}
 
-\subsection{Prevailing Wage}
 
-It would be interesting to see how many workers are getting approved for H-1B visas over the years. We can see this by plotting the number of workers within each visa status category (Certified, Denied, and Withdrawn). \ref{fig:worker-application-status}
+\subsection{Labor Condition Agreement Applications}
 
-<<echo=FALSE, fig.height=4, fig.width=6, warning=FALSE, error=FALSE>>=
+<<worker-application-status, fig.cap='LCA status from 2008 - 2016', fig.width=7, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
 options(scipen=999)
 
-visas <- readRDS('VisasByJob.rds')
+visas <- readRDS('H1BVisas.rds')
 
-visas.by.status <- select(visas, fy, total_workers, status) %>%
+visas.by.status <- select(visas, fy, total_workers, status, visa_class) %>%
     filter(!is.na(status)) %>%
     filter(total_workers < 1000) %>%
-    group_by(status, fy) %>%
+    group_by(visa_class, status, fy) %>%
     dplyr::summarise(tot = sum(total_workers, na.rm = TRUE))
 
-visas.by.status$status <- as.factor(visas.by.status$status)
-@
+visas.by.status$visa_class[which(visas.by.status$visa_class == 'E-3 Australian')] <- 'E-3'
+visas.by.status$visa_class[which(visas.by.status$visa_class == 'H-1B1 Singapore')] <- 'H-1B1S'
+visas.by.status$visa_class[which(visas.by.status$visa_class == 'H-1B1 Chile')] <- 'H-1B1C'
 
-<<worker-application-status, fig.cap='LCA status from 2008 - 2016', fig.width=6, fig.height=4, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=  
-ggplot(visas.by.status, aes(x = status, y = tot))  +
+visas.by.status$status <- as.factor(visas.by.status$status)
+
+ggplot(visas.by.status, aes(x = status, y = tot, fill=visa_class))  +
   geom_bar(stat = "identity") +
   scale_x_discrete(labels=(c("C", "D", "W"))) +
   facet_grid(~ fy) +
   labs(title = "Number of workers by application status",
            x = "Application Status (Certified, Denied, Withdrawn)", 
            y = "Numer of workers requested") +
-  theme(axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size=12))
+  theme(title = element_text(size = 16),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20))
 
+visa.proporations <- visas.by.status %>% 
+  filter(status == 'CERTIFIED') %>%
+  group_by(visa_class) %>%
+  summarise(sum=sum(tot)) %>%
+  filter(!is.na(visa_class))
+
+h1b.proportion <- round((visa.proporations$sum[which(visa.proporations$visa_class == 'H-1B')] / sum(visa.proporations$sum)) * 100, digits = 2)
 @
 
-Clearly, we can see huge outliers in 2010 and 2013 that don't seem to fit the data. Upon investigation, it is safe to say that all H-1B applications requesting over 1,000 total workers are either denied or withdrawn. These can be safely ignored. \ref{fig:outliers-by-status}
+The number of workers requested via LCA has shown a marked increase since 2010 (Certified, Denied, and Withdrawn). It is also immediately clear, from Figure~\ref{fig:worker-application-status} that H-1B LCAs dwarf E-3 and H-1B1 applications, making up \Sexpr{h1b.proportion}\% of all LCA applications. \ footnote{2010 data did not include the visa classification}
 
 
-<<outliers-by-status, fig.cap='Outliers in number of workers requested can be attributed to human error', fig.width=6, fig.height=4, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>= 
-
-# Let's look at the statuses of the higher ones and if they were denied, we'll exclude them. 
+%<<outliers-by-status, fig.cap='Outliers in number of workers requested can be attributed to human error', fig.width=6, fig.height=4, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>= 
+%# Let's look at the statuses of the higher ones and if they were denied, we'll exclude them. 
  
-outliers.by.status <- select(visas, fy, total_workers, status) %>%
-    filter(!is.na(status)) %>%
-    filter(total_workers > 1000) %>%
-    arrange(total_workers, fy)
+%outliers.by.status <- select(visas, fy, total_workers, status) %>%
+    %filter(!is.na(status)) %>%
+    %filter(total_workers > 1000) %>%
+    %arrange(total_workers, fy)
   
-kable(outliers.by.status, 
-      col.names = c("Year", "Workers Requested", "Status"),
-      format = "latex", 
-      caption = "Applications requesting over 1000 workers", 
-      booktabs = TRUE)
-@
+%kable(outliers.by.status, 
+      %col.names = c("Year", "Workers Requested", "Status"),
+      %format = "latex", 
+      %caption = "Applications requesting over 1000 workers", 
+      %booktabs = TRUE)
+%@
 
-Once we remove all requests for more than 1,000 workers, we can start to see a pattern. The number of denied and withdrawn applications remains fairly constant, but the number of certified workers shows a steady rise after 2010, most likely due to a strengthening economy and returning jobs. \cite{BLS}
+The number of denied and withdrawn applications remains fairly constant, but the number of certified LCA workers tracks along with a strengthening economy and returning jobs. Compared side-by-side (Figure~\ref{fig:lca-vs-economy}), it can be seen that LCA applications rise and fall with the job market. \cite{BLS}
 
-<<echo=FALSE, warning=FALSE, fig.height=4, fig.width=6>>=
+The astute reader may note that the number of certified LCA applications greatly exceeds the cap of 65,000 workers. It is important to make the distinction that an LCA does not necessarily lead to a visa certification. They are neceessary but not sufficient for obtaining a visa.
+
+
+<<lca-vs-economy, fig.cap='LCA applications vs. jobs lost or added', fig.width=9, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
 
 # Everything over 1000 workers were either denied or withdrawn. We can ignore those.
 
@@ -330,18 +353,35 @@ visas.by.status <- select(visas, fy, total_workers, status) %>%
     dplyr::summarise(tot = sum(total_workers))
 
 visas.by.status.vs.jobs <- rbind(as.data.frame(visas.by.status), job.stats)
+colnames(visas.by.status.vs.jobs) <- c('Type', 'fy', 'Jobs')
+visas.by.status.vs.jobs$Type[visas.by.status.vs.jobs$Type == 'CERTIFIED'] <- 'Certified LCA'
+visas.by.status.vs.jobs$Type[visas.by.status.vs.jobs$Type == 'JOBS'] <- 'Jobs'
 
-ggplot(visas.by.status.vs.jobs, aes(x = status, y = tot, fill = status))  +
+
+
+ggplot(visas.by.status.vs.jobs, aes(x = Type, y = Jobs, fill = Type))  +
   geom_bar(stat = "identity") +
   scale_x_discrete(labels=NULL) +
   facet_grid(. ~ fy) +
-  labs(title = "Workers by application status vs. U.S. job market", x = "Certified H-1Bs vs. U.S. Job Market")
+  labs(title = "Certified LCA Workers vs. U.S. job market", x = "Certified H-1Bs vs. U.S. Job Market") +
+  theme(title = element_text(size = 20),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20))
+@
 
+
+<<lca-regression, fig.cap='LCA application growth', fig.width=7, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
 fy <- 2007
 visas.count <- visas.by.status$tot[which(visas.by.status$fy > fy)]
 visas.year <- visas.by.status$fy[which(visas.by.status$fy > fy)]
 
-plot(x = visas.year, visas.count, col="red", ylim = c(0, max(visas.count) + 1000))
+plot(x = visas.year, 
+     y = visas.count, 
+     col="red", 
+     ylim = c(0, max(visas.count) + 1000),
+     xlab = "Year",
+     ylab = "LCA Certified Workers",
+     main = "Workers requested through LCA")
 
 visas.lm <- lm(visas.count ~ visas.year)
 abline(visas.lm, col="red")
@@ -353,42 +393,119 @@ next.year <- data.frame(visas.year = 2017)
 next.year.pred <- predict(visas.lm, next.year, interval="predict")[1, 'fit']
 @
 
-The demand for new temporary worker jobs year over year suggests a strong linear relation with $\rho = $ \Sexpr{visas.lm.rsq} and a $p$-value of \Sexpr{visas.lm.pval}. We could estimate that if things continue on this course, in 2017 we should expect to see \Sexpr{digits.format(round(next.year.pred), sci.digits = 0)} temporary foreign worker jobs added.
-
-% XXX: Not sure how much the correlation matters. It isn't super strong. To be determined...
-%After 2009, the certified visa workers count shows a correlation coefficient of \Sexp{corr.coef}, which suggests some correlation. The U.S. jobs line, does not suggest a trend, with a $p$-value of 
-
-At this point, it should be noted that there is a major discrepancy between the number of workers granted temporary status and the legal cap of 65,000. This will take some research to clarify.
+Figure~\ref{fig:lca-regression} shows the demand for new temporary worker jobs year over year suggests a strong linear relation with $\rho = $ \Sexpr{visas.lm.rsq} and a $p$-value of \Sexpr{visas.lm.pval}. We could estimate that if things continue on this course, in 2017 we should expect to see \Sexpr{digits.format(round(next.year.pred), sci.digits = 0)} LCA applications certified.
 
 
-<<echo=FALSE, warning=FALSE, fig.height=4, fig.width=6>>=
-naics.job.title <- "Computer Systems Design Services"
-hist(visas[which(visas$naics_title == naics.job.title),]$normalized_wage, 
-     breaks=500, 
-     xlim = c(0, 500000),
-     main = paste(naics.job.title, "wages", sep = " "),
-     xlab = "Normalized Wage")
 
-csds.mean <- mean(visas[which(visas$naics_title == naics.job.title),]$normalized_wage, na.rm = TRUE)
-csds.median <- median(visas[which(visas$naics_title == naics.job.title),]$normalized_wage, na.rm = TRUE)
 
-naics.job.title <- "Construction"
-hist(visas[which(visas$naics_title == naics.job.title),]$normalized_wage, 
-     breaks=500, 
-     xlim = c(0, 500000),
-     main = paste(naics.job.title, "wages", sep = " "),
-     xlab = "Normalized Wage")
+\subsection{Prevailing Wage}
 
-construction.mean <- mean(visas[which(visas$naics_title == naics.job.title),]$normalized_wage, na.rm = TRUE)
-construction.median <- median(visas[which(visas$naics_title == naics.job.title),]$normalized_wage, na.rm = TRUE)
+A study done in 2007 by the Center for Immigration Studies, a non-profit conservative (often controversial) think tank made claims that for 2005 LCA data, employers were lowballing prevailing wages in order to bring in cheap under-skilled labor. The concept of skill level was defined as the Department of Labor's skill-based prevailing wage system, which doesn't appear in any of our data. 
+
+We attempted to recreate parts of this study for 2015 data to see if things had changed over a decade later. 
+
+
+<<visa-wage-vs-median, fig.cap='Visa wages (claimed prevailing wage and actual wage) compared with the US median wage by occupation and state. The red line indicates where the visa wage equals the median wage.', fig.width=7, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
+bls <- fread('BLS_state_wages_2015.csv')
+bls$OCC_CODE <- gsub("-", ".", bls$OCC_CODE)
+bls$OCC_CODE <- as.numeric(bls$OCC_CODE)
+
+bls.fy2015 <- bls %>% select(ST, OCC_CODE, OCC_TITLE, A_MEAN, A_MEDIAN)
+fy2015 <- visas %>% filter(fy == 2015)
+
+
+fy2015$ST_OCC <- paste(fy2015$worksite_state, fy2015$soc_code)
+bls.fy2015$ST_OCC <- paste(bls.fy2015$ST, bls.fy2015$OCC_CODE)
+
+fy2015 <- merge(fy2015, bls.fy2015, by.x="ST_OCC", by.y="ST_OCC", all.x=T, all.y=F)
+
+fy2015$A_MEAN <- gsub(",", "", fy2015$A_MEAN)
+fy2015$A_MEAN <- as.numeric(fy2015$A_MEAN)
+fy2015$A_MEDIAN <- gsub(",", "", fy2015$A_MEDIAN)
+fy2015$A_MEDIAN <- as.numeric(fy2015$A_MEDIAN)
+
+fy2015 <- fy2015 %>% filter(!is.na(A_MEDIAN))
+
+wage.delta <- mean(fy2015$A_MEDIAN - fy2015$normalized_wage)
+median.vs.wage <- mean(Step(fy2015$A_MEDIAN - fy2015$normalized_wage))
+pw.delta <- mean(fy2015$A_MEDIAN - fy2015$normalized_prevailing_wage)
+median.vs.pw <- mean(Step(fy2015$A_MEDIAN - fy2015$normalized_prevailing_wage))
+
+ggplot(fy2015, aes(x=jitter(A_MEDIAN), y=jitter(normalized_prevailing_wage), col=visa_class, fill=visa_class)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, col = "red", size = 1) +
+  labs(title = "2015 LCA Prevailing Wage vs. Median US Wage", x = "Median Wage", y = "LCA Prevailing Wage", colour = "Visa Class") +
+  theme(title = element_text(size = 20),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20))
+ggplot(fy2015, aes(x=jitter(A_MEDIAN), y=jitter(normalized_wage), col=visa_class, fill=visa_class)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, col = "red", size = 1) +
+  labs(title = "2015 LCA Wage vs. Median US Wage", x = "Median Wage", y = "LCA Wage", colour = "Visa Class") +
+  theme(title = element_text(size = 20),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20))
 @
 
-Here we see Computer Systems Design Services with a mean wage of \Sexpr{ currency.format(csds.mean) } and a median wage of \Sexpr{ currency.format(csds.median) }.
-Construction fields show a higher wage mean but lower median of \Sexpr{ currency.format(construction.mean) } and \Sexpr{ currency.format(construction.median) } respectively, as well as more outliers.
 
-In fact, outliers prove to be challenging when examining this data. With the diversity of jobs and the vague umbrella fields they fall under, this will always be a challenge with wage data. A construction worker may only earn \$45,000, and the CEO of a construction firm may earn \$500,000, but they both fall under the Construction umbrella.
 
-For this reason, it may be necessary to further break down the categories into job titles. This gets tricky with the data we have.
+
+<<top20jobs, fig.cap='The top 20 professions in 2015 by number of LCA filings', fig.width=7, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
+
+top20jobs <- fy2015 %>% select(OCC_CODE, OCC_TITLE) %>% 
+  group_by(OCC_TITLE) %>% 
+  summarise(n=n()) %>% 
+  arrange(-n)
+
+# Take the top 20
+top20jobs <- top20jobs[1:20, ]
+
+top20jobs$OCC_TITLE <- factor(top20jobs$OCC_TITLE, levels=top20jobs$OCC_TITLE[order(top20jobs$n)])
+
+ggplot(top20jobs, aes(x = OCC_TITLE, y=n)) + 
+  geom_bar(stat="identity") +
+  coord_flip() +
+  labs(title = "Top 20 Occupations in 2015 ", x = "LCA Applications", y = "Occupation") +
+  theme(title = element_text(size = 20),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20))
+  
+@
+
+The Center for Immigration Studies focussed on Coputer Programmers, so we will do the same.
+
+
+
+<<computer-programmers, fig.cap='Median wage data by state for computer programmers.', fig.width=7, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
+
+bls.programmers <- fy2015 %>% filter(OCC_TITLE == 'Computer Programmers')
+
+wage.delta <- mean(bls.programmers$A_MEDIAN - bls.programmers$normalized_wage)
+median.vs.wage <- mean(Step(bls.programmers$A_MEDIAN - bls.programmers$normalized_wage))
+pw.delta <- mean(bls.programmers$A_MEDIAN - bls.programmers$normalized_prevailing_wage)
+median.vs.pw <- mean(Step(bls.programmers$A_MEDIAN - bls.programmers$normalized_prevailing_wage))
+
+inflation2005to2015 <- 1.21
+
+ggplot(bls.programmers, aes(x=jitter(A_MEDIAN), y=jitter(normalized_prevailing_wage), col=visa_class)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, col = "red", size = 1) +
+  labs(title = "2015 Computer Programmer Prevailing Wage vs. Median US Wage", x = "Median Wage", y = "LCA Prevailing Wage", colour = "Visa Class") +
+  theme(title = element_text(size = 20),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20))
+
+ggplot(bls.programmers, aes(x=jitter(A_MEDIAN), y=jitter(normalized_wage), col=visa_class)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, col = "red", size = 1) +
+  labs(title = "2015 LCA Prevailing Wage vs. Median US Wage", x = "Median Wage", y = "LCA Prevailing Wage", colour = "Visa Class") +
+  theme(title = element_text(size = 20),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20))
+ 
+@
+
+The CIS study claimed that in FY 2005, H-1B employer prevailing wage claims averaged $16,000 below the median wage for U.S. computer workers in the same location and occupation. Here, we look at computer programmers specifically in 2015, and we can see that the employer prvailing wage claims average about \Sexpr{pw.delta} below the median, which is \Sexpr{pw.delta - 16000} higher than 10 years ago, or roughly on par with the 21\% inflation. \cite{BLSInflation}
 
 <<echo=FALSE, fig.height=4, fig.width=6, warning=FALSE, message=FALSE>>=
 
@@ -642,6 +759,10 @@ ggplot(attorneys, aes(x=name, y=n)) +
 % TODO:
 %\subsection{H-1B vs. PERM}
 
+%ggplot(visas) +
+  %geom_density(aes(log(normalized_wage)), stat="bin", binwidth = .05, fill=rgb(0, 0, 1, 1/4)) +
+  %geom_density(aes(log(normalized_prevailing_wage)), stat="bin", binwidth = 0.05, fill=rgb(1, 0, 0, 1/4))
+
 \section{Conclusion}
 
 
@@ -675,7 +796,13 @@ The highest paying and lowest paying states, normalized by cost of living, are (
 
 \bibitem{BLS}
   Bureau of Labor Statistics
+  \textit{Employment, Hours, and Earnings from the Current Employment Statistics survey (National)}
   \href{http://data.bls.gov/timeseries/CES0000000001?output\_view=net\_1mth}{http://data.bls.gov/timeseries/CES0000000001?output\_view=net\_1mth}
+  
+\bibitem{BLS2015}
+  Bureau of Labor Statistics
+  \textit{May 2015 National Occupational Employment and Wage Estimates}
+  \href{http://www.bls.gov/oes/current/oes_nat.htm}{http://www.bls.gov/oes/current/oes_nat.htm}
   
 \bibitem{Supply}  
   Kerr, William R. Lincoln, William F.
@@ -688,12 +815,24 @@ The highest paying and lowest paying states, normalized by cost of living, are (
   \textit{The Value of an Employment-Based Green Card}
   PubMed,
   \href{https://www.ncbi.nlm.nih.gov/pubmed/22161232}{https://www.ncbi.nlm.nih.gov/pubmed/22161232}
-  
+
+\bibitem{OFLC2015AR}  
+  Office of Foreign Labor Certification
+  \textit{Annual Report 2015}
+  \href{https://www.foreignlaborcert.doleta.gov/pdf/OFLC_Annual_Report_FY2015.pdf}{https://www.foreignlaborcert.doleta.gov/pdf/OFLC_Annual_Report_FY2015.pdf}
+
+\bibitem{BLSInflation}
+  Bureau of Labor Statistics
+  \textit{Inflation Calculator}
+  \href{http://www.bls.gov/data/inflation_calculator.htm}{http://www.bls.gov/data/inflation_calculator.htm}
+    
 % Specifications, but not publications: 
 %
 % https://www.uscis.gov/working-united-states/temporary-workers/h-1b-specialty-occupations-dod-cooperative-research-and-development-project-workers-and-fashion-models
 % https://www.uscis.gov/working-united-states/permanent-workers
   
 \end{thebibliography}
+
+
 
 \end{document}

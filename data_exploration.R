@@ -42,6 +42,11 @@ ggplot(visas.by.status, aes(x = status, y = tot))  +
   geom_bar(stat = "identity") +
   facet_grid(. ~ fy)
   coord_flip +
+    
+visas.by.job %>% 
+    filter(fy == 2015) %>%
+    group_by(status) %>%
+    summarise(n=n(), sum(total_workers))
 
 # Clearly, we can see a huge outlier in 2010 that is throwing the whole chart off. Let's clean some of the ridiculous ones.
 sort(visas$total_workers, decreasing = T)

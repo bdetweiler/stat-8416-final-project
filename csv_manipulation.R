@@ -2,6 +2,7 @@ library(data.table)
 library(mgcv)
 library(bit64)
 library(ggplot2)
+library(lubridate)
 library(dplyr)
 
 # For some reason, prevailing wage is printing in scientific notation, which is annoying to look at
@@ -78,6 +79,12 @@ fy2008$wage_rate_to[which(fy2008$wage_rate_to == 0)] <- fy2008$wage_rate_from[wh
 
 # FY 2008 column goes by "PART_TIME"
 fy2008$part_time <- fy2008$part_time == "Y"
+
+# Get dates properly formatted
+fy2008$submitted_date <- mdy(fy2008$submitted_date)
+fy2008$dol_decision_date <- mdy(fy2008$dol_decision_date)
+fy2008$begin_date <- mdy(fy2008$begin_date)
+fy2008$end_date <- mdy(fy2008$end_date)
 
 columnOrder <- unlist(strsplit('fy	file_name	case_number	submitted_date	visa_class	employer_name	employer_address1	employer_address2	employer_city	employer_state	employer_zip_code	worksite_city	worksite_state	worksite_zip_code	total_workers	dol_decision_date	begin_date	end_date	certified_begin_date	certified_end_date	job_title	job_code	status	withdrawn	soc_code	soc_name	occupational_title	wage_rate	wage_rate_from	wage_rate_to	wage_unit	prevailing_wage	prevailing_wage_unit	max_wage	part_time	agent_attorney_first_name	agent_attorney_last_name	agent_attorney_city	agent_attorney_state', split = '\t'))
 
@@ -162,6 +169,12 @@ fy2009$wage_rate_to[which(fy2009$wage_rate_to == 0)] <- fy2009$wage_rate_from[wh
 # FY 2009 non-Icert column goes by "PART_TIME"
 fy2009$part_time <- fy2009$part_time == "Y"
 
+# Get dates properly formatted
+fy2009$submitted_date <- mdy(fy2009$submitted_date)
+fy2009$dol_decision_date <- mdy(fy2009$dol_decision_date)
+fy2009$begin_date <- mdy(fy2009$begin_date)
+fy2009$end_date <- mdy(fy2009$end_date)
+
 columnOrder <- unlist(strsplit('fy	file_name	case_number	submitted_date	visa_class	employer_name	employer_address1	employer_address2	employer_city	employer_state	employer_zip_code	worksite_city	worksite_state	worksite_zip_code	total_workers	dol_decision_date	begin_date	end_date	certified_begin_date	certified_end_date	job_title	job_code	status	withdrawn	soc_code	soc_name	occupational_title	wage_rate	wage_rate_from	wage_rate_to	wage_unit	prevailing_wage	prevailing_wage_unit	max_wage	part_time	agent_attorney_first_name	agent_attorney_last_name	agent_attorney_city	agent_attorney_state', split = '\t'))
 
 # Order the columns
@@ -238,6 +251,12 @@ fy2009iCert$wage_rate_to[which(is.na(fy2009iCert$wage_rate_to))] <- fy2009iCert$
 # FY 2009 Icert column goes by "FULL_TIME_POS" so we need to negate
 fy2009iCert$part_time <- fy2009iCert$part_time == "N"
 
+# Get dates properly formatted
+fy2009iCert$submitted_date <- mdy(fy2009iCert$submitted_date)
+fy2009iCert$dol_decision_date <- mdy(fy2009iCert$dol_decision_date)
+fy2009iCert$begin_date <- mdy(fy2009iCert$begin_date)
+fy2009iCert$end_date <- mdy(fy2009iCert$end_date)
+
 columnOrder <- unlist(strsplit('fy	file_name	case_number	submitted_date	visa_class	employer_name	employer_address1	employer_address2	employer_city	employer_state	employer_zip_code	worksite_city	worksite_state	worksite_zip_code	total_workers	dol_decision_date	begin_date	end_date	certified_begin_date	certified_end_date	job_title	job_code	status	withdrawn	soc_code	soc_name	occupational_title	wage_rate	wage_rate_from	wage_rate_to	wage_unit	prevailing_wage	prevailing_wage_unit	max_wage	part_time	agent_attorney_first_name	agent_attorney_last_name	agent_attorney_city	agent_attorney_state', split = '\t'))
 
 # Order the columns
@@ -294,7 +313,10 @@ fy2010$worksite_zip_code <- rep(NA, dim(fy2010)[1])
 fy2010$certified_begin_date <- rep(NA, dim(fy2010)[1])
 fy2010$certified_end_date <- rep(NA, dim(fy2010)[1])
 fy2010$wage_rate <- rep(NA, dim(fy2010)[1])
-fy2010$wage_unit <- rep(NA, dim(fy2010)[1])
+
+# Note: No wage unit was supplied, but it is implied by the prevailing wage unit
+fy2010$wage_unit <- fy2010$prevailing_wage_unit
+
 fy2010$occupational_title <- rep(NA, dim(fy2010)[1])
 fy2010$max_wage <- rep(NA, dim(fy2010)[1])
 fy2010$part_time <- rep(NA, dim(fy2010)[1])
@@ -314,6 +336,12 @@ fy2010$employer_zip_code <- as.character(fy2010$employer_zip_code)
 fy2010$worksite_zip_code <- as.character(fy2010$worksite_zip_code)
 
 fy2010$wage_rate_to[which(is.na(fy2010$wage_rate_to))] <- fy2010$wage_rate_from[which(is.na(fy2010$wage_rate_to))]
+
+# Get dates properly formatted
+fy2010$submitted_date <- mdy(fy2010$submitted_date)
+fy2010$dol_decision_date <- mdy(fy2010$dol_decision_date)
+fy2010$begin_date <- mdy(fy2010$begin_date)
+fy2010$end_date <- mdy(fy2010$end_date)
 
 # DON'T CHANGE
 columnOrder <- unlist(strsplit('fy	file_name	case_number	submitted_date	visa_class	employer_name	employer_address1	employer_address2	employer_city	employer_state	employer_zip_code	worksite_city	worksite_state	worksite_zip_code	total_workers	dol_decision_date	begin_date	end_date	certified_begin_date	certified_end_date	job_title	job_code	status	withdrawn	soc_code	soc_name	occupational_title	wage_rate	wage_rate_from	wage_rate_to	wage_unit	prevailing_wage	prevailing_wage_unit	max_wage	part_time	agent_attorney_first_name	agent_attorney_last_name	agent_attorney_city	agent_attorney_state', split = '\t'))
@@ -394,6 +422,11 @@ fy2011$wage_rate_to[which(is.na(fy2011$wage_rate_to))] <- fy2011$wage_rate_from[
 # FY 2011  column goes by "FULL_TIME_POS" so we need to negate
 fy2011$part_time <- fy2011$part_time == "N"
 
+# Get dates properly formatted
+fy2011$submitted_date <- mdy(fy2011$submitted_date)
+fy2011$dol_decision_date <- mdy(fy2011$dol_decision_date)
+fy2011$begin_date <- mdy(fy2011$begin_date)
+fy2011$end_date <- mdy(fy2011$end_date)
 
 # DON'T CHANGE
 columnOrder <- unlist(strsplit('fy	file_name	case_number	submitted_date	visa_class	employer_name	employer_address1	employer_address2	employer_city	employer_state	employer_zip_code	worksite_city	worksite_state	worksite_zip_code	total_workers	dol_decision_date	begin_date	end_date	certified_begin_date	certified_end_date	job_title	job_code	status	withdrawn	soc_code	soc_name	occupational_title	wage_rate	wage_rate_from	wage_rate_to	wage_unit	prevailing_wage	prevailing_wage_unit	max_wage	part_time	agent_attorney_first_name	agent_attorney_last_name	agent_attorney_city	agent_attorney_state', split = '\t'))
@@ -473,6 +506,12 @@ fy2012$worksite_zip_code <- as.character(fy2012$worksite_zip_code)
 # FY 2012  column goes by "FULL_TIME_POS" so we need to negate
 fy2012$part_time <- fy2012$part_time == "N"
 
+# Get dates properly formatted
+fy2012$submitted_date <- mdy(fy2012$submitted_date)
+fy2012$dol_decision_date <- mdy(fy2012$dol_decision_date)
+fy2012$begin_date <- mdy(fy2012$begin_date)
+fy2012$end_date <- mdy(fy2012$end_date)
+
 # DON'T CHANGE
 columnOrder <- unlist(strsplit('fy	file_name	case_number	submitted_date	visa_class	employer_name	employer_address1	employer_address2	employer_city	employer_state	employer_zip_code	worksite_city	worksite_state	worksite_zip_code	total_workers	dol_decision_date	begin_date	end_date	certified_begin_date	certified_end_date	job_title	job_code	status	withdrawn	soc_code	soc_name	occupational_title	wage_rate	wage_rate_from	wage_rate_to	wage_unit	prevailing_wage	prevailing_wage_unit	max_wage	part_time	agent_attorney_first_name	agent_attorney_last_name	agent_attorney_city	agent_attorney_state', split = '\t'))
 
@@ -550,6 +589,12 @@ fy2013$worksite_zip_code <- as.character(fy2013$worksite_zip_code)
 
 # FY 2013  column goes by "FULL_TIME_POS" so we need to negate
 fy2013$part_time <- fy2013$part_time == "N"
+
+# Get dates properly formatted
+fy2013$submitted_date <- mdy(fy2013$submitted_date)
+fy2013$dol_decision_date <- mdy(fy2013$dol_decision_date)
+fy2013$begin_date <- mdy(fy2013$begin_date)
+fy2013$end_date <- mdy(fy2013$end_date)
 
 # DON'T CHANGE
 columnOrder <- unlist(strsplit('fy	file_name	case_number	submitted_date	visa_class	employer_name	employer_address1	employer_address2	employer_city	employer_state	employer_zip_code	worksite_city	worksite_state	worksite_zip_code	total_workers	dol_decision_date	begin_date	end_date	certified_begin_date	certified_end_date	job_title	job_code	status	withdrawn	soc_code	soc_name	occupational_title	wage_rate	wage_rate_from	wage_rate_to	wage_unit	prevailing_wage	prevailing_wage_unit	max_wage	part_time	agent_attorney_first_name	agent_attorney_last_name	agent_attorney_city	agent_attorney_state', split = '\t'))
@@ -630,6 +675,12 @@ fy2014$worksite_zip_code <- as.character(fy2014$worksite_zip_code)
 # FY 2014  column goes by "FULL_TIME_POS" so we need to negate
 fy2014$part_time <- fy2014$part_time == "N"
 
+# Get dates properly formatted
+fy2014$submitted_date <- mdy(fy2014$submitted_date)
+fy2014$dol_decision_date <- mdy(fy2014$dol_decision_date)
+fy2014$begin_date <- mdy(fy2014$begin_date)
+fy2014$end_date <- mdy(fy2014$end_date)
+
 # DON'T CHANGE
 columnOrder <- unlist(strsplit('fy	file_name	case_number	submitted_date	visa_class	employer_name	employer_address1	employer_address2	employer_city	employer_state	employer_zip_code	worksite_city	worksite_state	worksite_zip_code	total_workers	dol_decision_date	begin_date	end_date	certified_begin_date	certified_end_date	job_title	job_code	status	withdrawn	soc_code	soc_name	occupational_title	wage_rate	wage_rate_from	wage_rate_to	wage_unit	prevailing_wage	prevailing_wage_unit	max_wage	part_time	agent_attorney_first_name	agent_attorney_last_name	agent_attorney_city	agent_attorney_state', split = '\t'))
 
@@ -708,6 +759,12 @@ fy2015$wage_rate_to[which(is.na(fy2015$wage_rate_to))] <- fy2015$wage_rate_from[
 # FY 2015  column goes by "FULL_TIME_POS" so we need to negate
 fy2015$part_time <- fy2015$part_time == "N"
 
+# Get dates properly formatted
+fy2015$submitted_date <- mdy(fy2015$submitted_date)
+fy2015$dol_decision_date <- mdy(fy2015$dol_decision_date)
+fy2015$begin_date <- mdy(fy2015$begin_date)
+fy2015$end_date <- mdy(fy2015$end_date)
+
 # DON'T CHANGE
 columnOrder <- unlist(strsplit('fy	file_name	case_number	submitted_date	visa_class	employer_name	employer_address1	employer_address2	employer_city	employer_state	employer_zip_code	worksite_city	worksite_state	worksite_zip_code	total_workers	dol_decision_date	begin_date	end_date	certified_begin_date	certified_end_date	job_title	job_code	status	withdrawn	soc_code	soc_name	occupational_title	wage_rate	wage_rate_from	wage_rate_to	wage_unit	prevailing_wage	prevailing_wage_unit	max_wage	part_time	agent_attorney_first_name	agent_attorney_last_name	agent_attorney_city	agent_attorney_state', split = '\t'))
 
@@ -774,16 +831,26 @@ fy2016$worksite_zip_code <- as.character(fy2016$worksite_zip_code)
 # FY 2016 column goes by "FULL_TIME_POS" so we need to negate
 fy2016$part_time <- fy2016$part_time == "N"
 
+# Get dates properly formatted
+fy2016$submitted_date <- mdy(fy2016$submitted_date)
+fy2016$dol_decision_date <- mdy(fy2016$dol_decision_date)
+fy2016$begin_date <- mdy(fy2016$begin_date)
+fy2016$end_date <- mdy(fy2016$end_date)
+
 fy2016$wage_rate_from <- gsub("\\$", "", fy2016$wage_rate_from)
 fy2016$wage_rate_to <- gsub("\\$", "", fy2016$wage_rate_to)
+fy2016$prevailing_wage <- gsub("\\$", "", fy2016$prevailing_wage)
 fy2016$wage_rate_from <- gsub(",", "", fy2016$wage_rate_from)
 fy2016$wage_rate_to <- gsub(",", "", fy2016$wage_rate_to)
+fy2016$prevailing_wage <- gsub(",", "", fy2016$prevailing_wage)
 
 fy2016$wage_rate_from <- as.numeric(fy2016$wage_rate_from)
 fy2016$wage_rate_to <- as.numeric(fy2016$wage_rate_to)
+fy2016$prevailing_wage <- as.numeric(fy2016$prevailing_wage)
 
 fy2016$wage_rate_to[which(is.na(fy2016$wage_rate_to))] <- fy2016$wage_rate_from[which(is.na(fy2016$wage_rate_to))]
 fy2016$wage_rate_to[which(fy2016$wage_rate_to == 0)] <- fy2016$wage_rate_from[which(fy2016$wage_rate_to == 0)]
+
 
 # DON'T CHANGE
 columnOrder <- unlist(strsplit('fy	file_name	case_number	submitted_date	visa_class	employer_name	employer_address1	employer_address2	employer_city	employer_state	employer_zip_code	worksite_city	worksite_state	worksite_zip_code	total_workers	dol_decision_date	begin_date	end_date	certified_begin_date	certified_end_date	job_title	job_code	status	withdrawn	soc_code	soc_name	occupational_title	wage_rate	wage_rate_from	wage_rate_to	wage_unit	prevailing_wage	prevailing_wage_unit	max_wage	part_time	agent_attorney_first_name	agent_attorney_last_name	agent_attorney_city	agent_attorney_state', split = '\t'))
@@ -791,17 +858,21 @@ columnOrder <- unlist(strsplit('fy	file_name	case_number	submitted_date	visa_cla
 # Order the columns
 setcolorder(fy2016, columnOrder)
 
-
 visas <- rbind(fy2008, fy2009, fy2009iCert, fy2010, fy2011, fy2012, fy2013, fy2014, fy2015, fy2016)
+
+#################
+################# REMOVE OUTLIERS
+#################
+
 
 # Post processing
 
-visas$submitted_date <- as.Date(visas$submitted_date, format = '%m/%d/%Y')
-visas$dol_decision_date <- as.Date(visas$dol_decision_date, format = '%m/%d/%Y')
-visas$begin_date <- as.Date(visas$begin_date, format = '%m/%d/%Y')
-visas$end_date <- as.Date(visas$end_date, format = '%m/%d/%Y')
-visas$certified_begin_date <- as.Date(visas$certified_begin_date, format = '%m/%d/%Y')
-visas$certified_end_date <- as.Date(visas$certified_end_date, format = '%m/%d/%Y')
+#visas$submitted_date <- as.Date(visas$submitted_date, format = '%m/%d/%Y')
+#visas$dol_decision_date <- as.Date(visas$dol_decision_date, format = '%m/%d/%Y')
+#visas$begin_date <- as.Date(visas$begin_date, format = '%m/%d/%Y')
+#visas$end_date <- as.Date(visas$end_date, format = '%m/%d/%Y')
+#visas$certified_begin_date <- as.Date(visas$certified_begin_date, format = '%m/%d/%Y')
+#visas$certified_end_date <- as.Date(visas$certified_end_date, format = '%m/%d/%Y')
 
 # Prior years used codes to represent visa classes
 visas$visa_class[which(visas$visa_class == 'R')] <- 'H-1B'
@@ -814,6 +885,7 @@ visas$visa_class[which(visas$visa_class == 'Select Visa Classification')] <- NA
 
 visas$wage_rate <- as.numeric(visas$wage_rate)
 visas$prevailing_wage <- as.numeric(visas$prevailing_wage)
+
 # Get rid of spaces
 visas$worksite_zip_code <- gsub(" ", "", visas$worksite_zip_code)
 visas$employer_zip_code <- gsub(" ", "", visas$employer_zip_code)
@@ -882,7 +954,7 @@ visas$worksite_state[visas$worksite_state == 'AS'] <- NA
 
 # 2008 and 2009 data is missing prevailing wage unit, so we'll assume it's the same as wage_unit
 
-visas$prevailing_wage_unit[which(is.na(visas$prevailing_wage_unit))] <- visas$wage_rate[which(is.na(visas$prevailing_wage_unit))]
+visas$prevailing_wage_unit[which(is.na(visas$prevailing_wage_unit))] <- visas$wage_unit[which(is.na(visas$prevailing_wage_unit))]
 
 normalized_wage <- visas$wage_unit
 normalized_wage[which(normalized_wage == 'YR')] <- 1
@@ -893,7 +965,8 @@ normalized_wage[which(normalized_wage == 'MTH')] <- 12
 normalized_wage[which(is.na(normalized_wage))] <- 0
 
 normalized_wage <- as.numeric(normalized_wage)
-
+visas$wage_rate_from <- as.numeric(visas$wage_rate_from)
+visas$wage_rate_to <- as.numeric(visas$wage_rate_to)
 visas$normalized_wage <- ((normalized_wage * visas$wage_rate_from) + (normalized_wage * visas$wage_rate_to)) / 2
 
 normalized_prevailing_wage <- visas$prevailing_wage_unit
@@ -907,12 +980,6 @@ normalized_prevailing_wage[which(is.na(normalized_prevailing_wage))] <- 0
 normalized_prevailing_wage <- as.numeric(normalized_prevailing_wage)
 
 visas$normalized_prevailing_wage <- normalized_prevailing_wage * visas$prevailing_wage
-visas$normalized_prevailing_wage[which(visas$normalized_prevailing_wage == 0)] <- NA
-
-# There were some major problems with the 2008 and 2009 wage rate data so we have to remove some outliers
-# We'll assume anything over $2,000,000 is an outlier
-visas$normalized_prevailing_wage[which(visas$normalized_prevailing_wage > 2000000)] <- NA
-visas$normalized_wage[which(visas$normalized_wage > 2000000)] <- NA
 
 visas$agent_attorney_first_name[which(visas$agent_attorney_first_name == '')] <- NA
 visas$agent_attorney_last_name <- visas$agent_attorney_first_name
@@ -927,12 +994,17 @@ visas$status[which(visas$status == "CERTIFIED-WITHDRAWN")] <- "WITHDRAWN"
 visas$status[which(visas$status == "REJECTED")] <- "DENIED"
 
 
+visas <- visas %>% filter(!is.na(normalized_wage)) %>%
+  filter(normalized_wage > 0)   %>%
+  filter(normalized_wage < 500000) %>%
+  filter(!is.na(normalized_prevailing_wage)) %>%
+  filter(normalized_prevailing_wage > 0) %>%
+  filter(normalized_prevailing_wage < 500000)
+
 # Save post processing
 saveRDS(visas, 'H1BVisas.rds')
 
-visas <- readRDS('H1BVisas.rds')
-
-unique(visas$job_code)
+# visas <- readRDS('H1BVisas.rds')
 
 # 2008 and 2009 used these Dictionary of Occupational Titles (DOT) codes found here:
 # https://www.uscis.gov/files/form/m-746.pdf
@@ -940,7 +1012,6 @@ file_name <- 'dot_job_codes.csv'
 dot_job_codes <- fread(file_name,  header = TRUE)
 
 visas <- merge(visas, dot_job_codes, by.x="job_code", by.y="dot_job_code", all.x=T, all.y=F)
-unique(visas$fy[which(!is.na(visas$dot_job_title))])
 
 # Only 2008 and 2009-non-iCERT uses the DOT codes
 visas$dot_job_title[which(visas$fy > 2009)] <- NA
@@ -974,6 +1045,17 @@ naics_2007$naics_code <- as.numeric(naics_2007$naics_code)
 
 visas <- merge(visas, naics_2007, by.x="job_code", by.y="naics_code", all.x=T, all.y=F, allow.cartesian = T)
 
+#### The SOC data is a mess. I can't seem to square it up with the 2007 or 2012 2-digit SOC codes, so ignoring for now.
+
+#visas$soc_code <- gsub("[.-][0-9][0-9]?$", "", visas$soc_code)
+#visas$soc_code <- gsub(" ", "", visas$soc_code)
+#visas$soc_code <- gsub("<FONT>|</FONT>", "", visas$soc_code)
+#visas$soc_code <- gsub("/|-|_|,", ".", visas$soc_code)
+#visas$soc_code <- gsub("\\.OO", "", visas$soc_code)
+#visas$soc_code <- gsub("([0-9][0-9])([0-9][0-9][0-9][0-9])", "\\1.\\2", visas$soc_code)
+#visas$soc_code <- gsub("\\.\\.", ".", visas$soc_code)
+#visas$soc_code <- as.numeric(visas$soc_code)
+
 #colsToRead <- c('2012 NAICS US   Code', '2012 NAICS US Title')
 #renameCols <- c('naics_code', 'naics_title')
 #file_name <- '2-digit_2012_naics_codes.csv'
@@ -987,11 +1069,14 @@ visas <- merge(visas, naics_2007, by.x="job_code", by.y="naics_code", all.x=T, a
 # Save post processing
 saveRDS(visas, 'H1BVisas.rds')
 
+
+
+
+
 addy <- cbind(visas$employer_name, visas$employer_address1, visas$employer_address2, visas$employer_city, visas$employer_state,  visas$employer_zip_code)
 colnames(addy) <- c('employer_name', 'employer_address1', 'employer_address2', 'employer_city', 'employer_state', 'employer_zipcode')
 uaddy <- unique(addy)
 saveRDS(uaddy, 'H1BUniqueAddresses.rds')
-
 
 
 #########################################################################
