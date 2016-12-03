@@ -213,28 +213,29 @@ Here is a sample of unique values in the categorical data:
 
 The numeric data provided by the H-1B and PERM datasets are mostly in the form of wages, both the wage that the employer is offering and the prevailing wage.\footnote{Prevailing wage is defined as the hourly wage, usual benefits and overtime, paid to the majority of workers, laborers, and mechanics within a particular geographic area.} Also of interest, are the number of workers an applicant is filing for, and the implicit number of applications faceted by status and year.
 
-A Bayesian analysis was performed on the H-1B wage data. 
+% TODO:
+%A Bayesian analysis was performed on the H-1B wage data. 
 
-Let $y_i$ denote the normalized wage listed in an LCA application.
+%Let $y_i$ denote the normalized wage listed in an LCA application.
 
-Wage data is usually distributed log-normally. Since we do not perport to be experts in visa law or economics, we will make vague assumptions about our prior beliefs. In other words, we will prefer to use relatively flat priors when estimating our parameters.
+%Wage data is usually distributed log-normally. Since we do not perport to be experts in visa law or economics, we will make vague assumptions about our prior beliefs. In other words, we will prefer to use relatively flat priors when estimating our parameters.
 
-The parameters of interst are $(\mu, \sigma)$. Thus, the model is described as
+%The parameters of interst are $(\mu, \sigma)$. Thus, the model is described as
 
-\begin{equation}
-\begin{split}
-    y_i &\sim LogNormal(\mu_{\ln{Y}}, \tau) \\
-    \tau &= \frac{1}{\sigma_{\ln{Y}}^2}\\
-    \sigma_{\ln{Y}} &\sim Uniform(0.001 S_{\ln{Y}}, 1000 * S_{\ln{y}} ) \\
-    \mu_{\ln{Y}} &\sim Normal\bigg(\overline{\ln{Y}}, 0.001 \frac{1}{S_{\ln{y}}^2}\bigg)\\
-    \mu_{Y} &= exp\bigg(\mu_{\ln{Y}} + \frac{S_{\ln{Y}}^2}{2}\bigg) \\
-    \sigma_{Y} &= \sqrt{exp(2 * \mu_{\ln{Y}} + \sigma_{\ln{Y}}^2) * (exp(\sigma_{\ln{Y}}^2)) - 1} \\
-\end{split}
-\end{equation}
+%\begin{equation}
+%\begin{split}
+    %y_i &\sim LogNormal(\mu_{\ln{Y}}, \tau) \\
+    %\tau &= \frac{1}{\sigma_{\ln{Y}}^2}\\
+    %\sigma_{\ln{Y}} &\sim Uniform(0.001 S_{\ln{Y}}, 1000 * S_{\ln{y}} ) \\
+    %\mu_{\ln{Y}} &\sim Normal\bigg(\overline{\ln{Y}}, 0.001 \frac{1}{S_{\ln{y}}^2}\bigg)\\
+    %\mu_{Y} &= exp\bigg(\mu_{\ln{Y}} + \frac{S_{\ln{Y}}^2}{2}\bigg) \\
+    %\sigma_{Y} &= \sqrt{exp(2 * \mu_{\ln{Y}} + \sigma_{\ln{Y}}^2) * (exp(\sigma_{\ln{Y}}^2)) - 1} \\
+%\end{split}
+%\end{equation}
 
-In the interest of computational time, we will seek to reduce our dataset while still maintaining a representative distribution.
+%In the interest of computational time, we will seek to reduce our dataset while still maintaining a representative distribution.
 
-For this, we take a random sample of 1,000 from the dataset and overlay the data to see that the sample is representative of the population.
+%For this, we take a random sample of 1,000 from the dataset and overlay the data to see that the sample is representative of the population.
 
 
 
@@ -292,13 +293,17 @@ ggplot(visas.by.status, aes(x = status, y = tot, fill=visa_class))  +
         axis.title.x = element_text(size = 20),
         axis.title.y = element_text(size = 20))
 
-visa.proporations <- visas.by.status %>% 
-  filter(status == 'CERTIFIED') %>%
-  group_by(visa_class) %>%
-  summarise(sum=sum(tot)) %>%
+
+visa.proportions <- 
+  visas.by.status %>% 
+  filter(status == 'CERTIFIED')  %>%
   filter(!is.na(visa_class))
 
-h1b.proportion <- round((visa.proporations$sum[which(visa.proporations$visa_class == 'H-1B')] / sum(visa.proporations$sum)) * 100, digits = 2)
+h1b.sum <- sum(visa.proportions$tot[which(visa.proportions$visa_class == 'H-1B')])
+other.sum <- sum(visa.proportions$tot[which(visa.proportions$visa_class != 'H-1B')])
+
+h1b.proportion <- round(h1b.sum / (other.sum + h1b.sum) * 100, digits = 2)
+
 @
 
 The number of workers requested via LCA has shown a marked increase since 2010 (Certified, Denied, and Withdrawn). It is also immediately clear, from Figure~\ref{fig:worker-application-status} that H-1B LCAs dwarf E-3 and H-1B1 applications, making up \Sexpr{h1b.proportion}\% of all LCA applications. \ footnote{2010 data did not include the visa classification}
@@ -395,27 +400,31 @@ next.year.pred <- predict(visas.lm, next.year, interval="predict")[1, 'fit']
 
 Figure~\ref{fig:lca-regression} shows the demand for new temporary worker jobs year over year suggests a strong linear relation with $\rho = $ \Sexpr{visas.lm.rsq} and a $p$-value of \Sexpr{visas.lm.pval}. We could estimate that if things continue on this course, in 2017 we should expect to see \Sexpr{digits.format(round(next.year.pred), sci.digits = 0)} LCA applications certified.
 
+\subsection{Prevailing Wage and Actual Wage}
 
-
-
-\subsection{Prevailing Wage}
-
-A study done in 2007 by the Center for Immigration Studies, a non-profit conservative (often controversial) think tank made claims that for 2005 LCA data, employers were lowballing prevailing wages in order to bring in cheap under-skilled labor. The concept of skill level was defined as the Department of Labor's skill-based prevailing wage system, which doesn't appear in any of our data. 
+A study done by the Center for Immigration Studies, a non-profit conservative (and often controversial) think tank made claims that for 2005 LCA data, employers were lowballing prevailing wages in order to bring in cheap under-skilled labor. The concept of skill level was defined as the Department of Labor's skill-based prevailing wage system, which doesn't appear in any of our data. 
 
 We attempted to recreate parts of this study for 2015 data to see if things had changed over a decade later. 
 
 
-<<visa-wage-vs-median, fig.cap='Visa wages (claimed prevailing wage and actual wage) compared with the US median wage by occupation and state. The red line indicates where the visa wage equals the median wage.', fig.width=7, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
+<<echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
 bls <- fread('BLS_state_wages_2015.csv')
+
 bls$OCC_CODE <- gsub("-", ".", bls$OCC_CODE)
 bls$OCC_CODE <- as.numeric(bls$OCC_CODE)
 
 bls.fy2015 <- bls %>% select(ST, OCC_CODE, OCC_TITLE, A_MEAN, A_MEDIAN)
-fy2015 <- visas %>% filter(fy == 2015)
+bls.fy2015$ST_OCC <- paste(bls.fy2015$ST, bls.fy2015$OCC_CODE)
 
+fy2015 <- visas %>% 
+  filter(fy == 2015) %>% 
+  select(worksite_state, soc_code, soc_name, normalized_wage, normalized_prevailing_wage, visa_class)
+
+fy2015$soc_code <- gsub("-", ".", fy2015$soc_code)
+fy2015$soc_code <- as.numeric(fy2015$soc_code)
 
 fy2015$ST_OCC <- paste(fy2015$worksite_state, fy2015$soc_code)
-bls.fy2015$ST_OCC <- paste(bls.fy2015$ST, bls.fy2015$OCC_CODE)
+fy2015$ST_OCC <- gsub("\\.[0-9][0-9]$", "", fy2015$ST_OCC)
 
 fy2015 <- merge(fy2015, bls.fy2015, by.x="ST_OCC", by.y="ST_OCC", all.x=T, all.y=F)
 
@@ -426,19 +435,62 @@ fy2015$A_MEDIAN <- as.numeric(fy2015$A_MEDIAN)
 
 fy2015 <- fy2015 %>% filter(!is.na(A_MEDIAN))
 
-wage.delta <- mean(fy2015$A_MEDIAN - fy2015$normalized_wage)
-median.vs.wage <- mean(Step(fy2015$A_MEDIAN - fy2015$normalized_wage))
-pw.delta <- mean(fy2015$A_MEDIAN - fy2015$normalized_prevailing_wage)
-median.vs.pw <- mean(Step(fy2015$A_MEDIAN - fy2015$normalized_prevailing_wage))
+@
 
-ggplot(fy2015, aes(x=jitter(A_MEDIAN), y=jitter(normalized_prevailing_wage), col=visa_class, fill=visa_class)) +
+<<visa-programmer-pw-vs-median, fig.cap='Prevailing wage claims for Computer Programmers compared with the US median wage (compared by state). The red line indicates where the prevailing wage claim equals the median wage.', fig.width=10, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
+
+fy2015.programmers <- fy2015 %>%
+  filter(OCC_TITLE == 'Computer Programmers')
+
+wage.delta.pro <- mean(fy2015.programmers$A_MEDIAN - fy2015.programmers$normalized_wage)
+median.vs.wage.pro <- round(mean(Step(fy2015.programmers$A_MEDIAN - fy2015.programmers$normalized_wage)) * 100, digits = 2)
+
+pw.delta.pro <- mean(fy2015.programmers$A_MEDIAN - fy2015.programmers$normalized_prevailing_wage)
+median.vs.pw.pro <- round(mean(Step(fy2015.programmers$A_MEDIAN - fy2015.programmers$normalized_prevailing_wage)) * 100, digits = 2)
+
+ggplot(fy2015.programmers, aes(x=jitter(A_MEDIAN), y=jitter(normalized_prevailing_wage), col=visa_class)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, col = "red", size = 1) +
+  labs(title = "2015 Computer Programmer Prevailing Wages", x = "Median Wage", y = "LCA Wage", colour = "Visa Class") +
+  theme(title = element_text(size = 20),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20))
+@
+
+<<visa-programmer-wage-vs-median, fig.cap='Actual visa wages for Computer Programmers compared with the US median wage (compared by state). The red line indicates where the visa wage equals the median wage.', fig.width=10, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
+
+ggplot(fy2015.programmers, aes(x=jitter(A_MEDIAN), y=jitter(normalized_wage), col=visa_class)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, col = "red", size = 1) +
+  labs(title = "2015 Computer Programmer Wages", x = "Median Wage", y = "LCA Wage", colour = "Visa Class") +
+  theme(title = element_text(size = 20),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20))
+@
+
+
+The 2005 report, which focussed specifically on computer programmers, stated that 84\% of H-1B workers were below the median U.S. wage. For the 2015 data, we found that \Sexpr{median.vs.pw.pro}\% of prevailing wage claims fall below the median wage for a given occupation and state (see Figure~\ref{fig:visa-programmer-pw-vs-median}). This seems to back up the claims of the CIS report, that employers are making dubious prevailing wage claims in order to hire cheaper programmers. 
+
+
+<<visa-pw-vs-median, fig.cap='Claimed prevailing wage compared with the equivalent median wage by occupation and state. The red line indicates where the visa wage equals the median wage.', fig.width=10, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
+wage.delta <- mean(fy2015$A_MEDIAN - fy2015$normalized_wage)
+median.vs.wage <- round(mean(Step(fy2015$A_MEDIAN - fy2015$normalized_wage)) * 100, digits = 2)
+
+pw.delta <- mean(fy2015$A_MEDIAN - fy2015$normalized_prevailing_wage)
+median.vs.pw <- round(mean(Step(fy2015$A_MEDIAN - fy2015$normalized_prevailing_wage)) * 100, digits = 2)
+
+ggplot(fy2015, aes(x=jitter(A_MEDIAN), y=jitter(normalized_prevailing_wage), col=visa_class)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, col = "red", size = 1) +
   labs(title = "2015 LCA Prevailing Wage vs. Median US Wage", x = "Median Wage", y = "LCA Prevailing Wage", colour = "Visa Class") +
   theme(title = element_text(size = 20),
         axis.title.x = element_text(size = 20),
         axis.title.y = element_text(size = 20))
-ggplot(fy2015, aes(x=jitter(A_MEDIAN), y=jitter(normalized_wage), col=visa_class, fill=visa_class)) +
+@
+
+
+<<visa-wage-vs-median, fig.cap='Actual visa wages compared with the US median wage by occupation and state. The red line indicates where the visa wage equals the median wage.', fig.width=10, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
+ggplot(fy2015, aes(x=jitter(A_MEDIAN), y=jitter(normalized_wage), col=visa_class)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, col = "red", size = 1) +
   labs(title = "2015 LCA Wage vs. Median US Wage", x = "Median Wage", y = "LCA Wage", colour = "Visa Class") +
@@ -447,263 +499,187 @@ ggplot(fy2015, aes(x=jitter(A_MEDIAN), y=jitter(normalized_wage), col=visa_class
         axis.title.y = element_text(size = 20))
 @
 
+The CIS study claimed that in FY 2005, H-1B employer prevailing wage claims averaged \Sexpr{currency.format(16000)} below the median wage for U.S. computer workers in the same location and occupation. Here, we look at computer programmers specifically in 2015, and we can see that the employer prvailing wage claims average about \Sexpr{currency.format(pw.delta)} below the median, which is \Sexpr{currency.format(round(pw.delta - 16000, 2))} worse than 10 years ago, or roughly on par with the 21\% inflation. \cite{BLSInflation}
+
+However, when looking at the H-1B program as a whole, the numbers improve significantly. We found that the prevailing wage claims in general were only \Sexpr{round(median.vs.pw, 2)}\% below the median on average. There is certainly room for improvement here, but this is a \Sexpr{90 - median.vs.pw}\% difference in the claims made by the he CIS report. When comparing actual wages, \Sexpr{median.vs.wage}\% fell below the median, which is a \Sexpr{84 - median.vs.wage}\% improvement over what was reported. 
+
+Wages in 2005 were \$12,000 below the median on average, and in 2015, we found this had not really changed. In general, however, wages were only \Sexpr{currency.format(wage.delta)} below the median on average. 
+
+The case that the CIS report makes is that the H-1B program is being abused to bring in under-qualified entry-level workers to work for less than their US counterparts. While there does seem to be some merit to these claims when analysing computer programmers, as a whole, the H-1B program is far more complex, with a standard deviation of \Sexpr{currency.format(round(sd(fy2015$normalized_wage), 2))}. 
 
 
+\subsection{Permanent Resident Visas}
 
-<<top20jobs, fig.cap='The top 20 professions in 2015 by number of LCA filings', fig.width=7, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
+Permanent residents (commonly known as greencard holders), have shown a steady increase in median salary over the years, and the number of applications has increased as well.
 
-top20jobs <- fy2015 %>% select(OCC_CODE, OCC_TITLE) %>% 
-  group_by(OCC_TITLE) %>% 
-  summarise(n=n()) %>% 
-  arrange(-n)
-
-# Take the top 20
-top20jobs <- top20jobs[1:20, ]
-
-top20jobs$OCC_TITLE <- factor(top20jobs$OCC_TITLE, levels=top20jobs$OCC_TITLE[order(top20jobs$n)])
-
-ggplot(top20jobs, aes(x = OCC_TITLE, y=n)) + 
-  geom_bar(stat="identity") +
-  coord_flip() +
-  labs(title = "Top 20 Occupations in 2015 ", x = "LCA Applications", y = "Occupation") +
-  theme(title = element_text(size = 20),
-        axis.title.x = element_text(size = 20),
-        axis.title.y = element_text(size = 20))
-  
-@
-
-The Center for Immigration Studies focussed on Coputer Programmers, so we will do the same.
-
-
-
-<<computer-programmers, fig.cap='Median wage data by state for computer programmers.', fig.width=7, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
-
-bls.programmers <- fy2015 %>% filter(OCC_TITLE == 'Computer Programmers')
-
-wage.delta <- mean(bls.programmers$A_MEDIAN - bls.programmers$normalized_wage)
-median.vs.wage <- mean(Step(bls.programmers$A_MEDIAN - bls.programmers$normalized_wage))
-pw.delta <- mean(bls.programmers$A_MEDIAN - bls.programmers$normalized_prevailing_wage)
-median.vs.pw <- mean(Step(bls.programmers$A_MEDIAN - bls.programmers$normalized_prevailing_wage))
-
-inflation2005to2015 <- 1.21
-
-ggplot(bls.programmers, aes(x=jitter(A_MEDIAN), y=jitter(normalized_prevailing_wage), col=visa_class)) +
-  geom_point() +
-  geom_abline(intercept = 0, slope = 1, col = "red", size = 1) +
-  labs(title = "2015 Computer Programmer Prevailing Wage vs. Median US Wage", x = "Median Wage", y = "LCA Prevailing Wage", colour = "Visa Class") +
-  theme(title = element_text(size = 20),
-        axis.title.x = element_text(size = 20),
-        axis.title.y = element_text(size = 20))
-
-ggplot(bls.programmers, aes(x=jitter(A_MEDIAN), y=jitter(normalized_wage), col=visa_class)) +
-  geom_point() +
-  geom_abline(intercept = 0, slope = 1, col = "red", size = 1) +
-  labs(title = "2015 LCA Prevailing Wage vs. Median US Wage", x = "Median Wage", y = "LCA Prevailing Wage", colour = "Visa Class") +
-  theme(title = element_text(size = 20),
-        axis.title.x = element_text(size = 20),
-        axis.title.y = element_text(size = 20))
- 
-@
-
-The CIS study claimed that in FY 2005, H-1B employer prevailing wage claims averaged $16,000 below the median wage for U.S. computer workers in the same location and occupation. Here, we look at computer programmers specifically in 2015, and we can see that the employer prvailing wage claims average about \Sexpr{pw.delta} below the median, which is \Sexpr{pw.delta - 16000} higher than 10 years ago, or roughly on par with the 21\% inflation. \cite{BLSInflation}
-
-<<echo=FALSE, fig.height=4, fig.width=6, warning=FALSE, message=FALSE>>=
+<<perm-med-wage, fig.cap='Median wage for all PERM workers by year.', fig.width=5, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
 
 options(scipen=10)
 
-# setwd("C:/Users/pavi/Desktop/UNO/IntroDataScience/Project/Data/testdat")
-
 dat_all <-  readRDS(file="PermData.rds")
 
-
 # Overview
-
-
 # average pay of perm applications
-df <- dat_all %>% filter(CASE_STATUS %in% c('CERTIFIED','CERTIFIED-EXPIRED') )  %>% dplyr::group_by(YEAR, CASE_STATUS) %>% 
-  dplyr::summarize(AVG_SALARY = mean(normalized_wage, na.rm = T)) %>% 
-  mutate_each(funs(prettyNum(., big.mark=",", digits=0))) %>%
-  spread(CASE_STATUS, AVG_SALARY ) 
+df <- dat_all %>% 
+  filter(CASE_STATUS %in% c('CERTIFIED','CERTIFIED-EXPIRED')) %>% 
+  group_by(YEAR) %>% 
+  summarize(MED_SALARY = median(normalized_wage, na.rm = T))
 
+df.applications <- dat_all %>%  
+  group_by(YEAR) %>% 
+  summarize(APPLICATIONS = n())
 
-df1 <- dat_all %>% filter(CASE_STATUS %in% c('CERTIFIED','CERTIFIED-EXPIRED') ) %>%  dplyr::group_by(YEAR) %>% 
-  dplyr::summarize(AVG_SALARY = mean(normalized_wage, na.rm = T))
-df1$AVG_SALARY = formatC(as.numeric(df1$AVG_SALARY), format="f", digits=0, big.mark=",")
-  
-df2=merge(df,df1, by.all='YEAR')
+df$APPLICATIONS <- df.applications$APPLICATIONS
 
-kable(df2 ,format = 'latex', caption = "Average Pay by Case Status", booktabs = TRUE)
-
-
-# number of perm applications
-df <- dat_all %>%  dplyr::group_by(YEAR, CASE_STATUS) %>% 
-  dplyr::summarize(APPLICATIONS = n()) %>% 
-  mutate_each(funs(prettyNum(., big.mark=",", digits=0))) %>%
-  spread(CASE_STATUS, APPLICATIONS ) 
-
-df1 <- dat_all %>%  dplyr::group_by(YEAR) %>% 
-  dplyr::summarize(APPLICATIONS = n())
-df1$APPLICATIONS = formatC(as.numeric(df1$APPLICATIONS), format="f", digits=0, big.mark=",")
-
-df2=merge(df,df1, by.all='YEAR')
-
-kable(df2 ,format = 'latex', caption = "Applications by year", booktabs = TRUE)
-
+kable(df, col.names = c("Year", "Median Salary", "Applications"), format = 'latex', caption = "Average and Median Pay by Case Status", booktabs = TRUE)
 @
 
-Under the PERM data, we are seeing a higher than average salary from 2008-2013 and in the last three years, the average salary has dropped, and incidentally the number of applications have increased.
 
-<<echo=FALSE, warning=FALSE , fig.height=4, fig.width=6>>=  
+<<perm-med-wage-eng, fig.cap='Median wage for PERM workers in Engineering Fields by State', fig.width=5, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
 
 # Grouping by study major starts here
+df <- dat_all %>% 
+  filter(YEAR >= 2015) %>% 
+  filter(CASE_STATUS %in% c('CERTIFIED','CERTIFIED-EXPIRED'))
+
+df$JOB_SUMMARY <- 'OTHER'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'DATA SCI.*'] <- 'DATA SCIENCE'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'DATA SCI.*'] <- 'DATA SCIENCE'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'DATA ANALY.*'] <- 'DATA SCIENCE'
+
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'ENGG.*COMP.*'] <- 'COMPUTER SCIENCE'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'ENGG.*CS.*'] <- 'COMPUTER SCIENCE'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'COMPUTER ENG.*'] <- 'COMPUTER SCIENCE'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'COMPUTERS.*'] <- 'COMPUTER SCIENCE'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'SOFTWARE ENG.*'] <- 'COMPUTER SCIENCE'
+
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'ENGG.*BUSINESS.*'] <- 'ENGG MANAGEMENT'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'ENGG.*MANAGEMENT.*'] <- 'ENGG MANAGEMENT'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'ENGG.*BUSADMIN.*'] <- 'ENGG MANAGEMENT'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'ENGG.*BUS ADMIN.*'] <- 'ENGG MANAGEMENT'
+
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'MECH.*'] <- 'ENGG (ANY)'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'ELECTR.*'] <- 'ENGG (ANY)'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'CHEM.*'] <- 'ENGG (ANY)'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'CIVIL.*'] <- 'ENGG (ANY)'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'PETRO.*'] <- 'ENGG (ANY)'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% '.*INDUS.*'] <- 'ENGG (ANY)'
+
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'ENGG,.*'] <- 'ENGG (ANY)'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'ENGG\\..*'] <- 'ENGG (ANY)'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'ENGG\\(.*'] <- 'ENGG (ANY)'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'ENGG \\(ANY\\).*']<- 'ENGG (ANY)'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'ENGG AND.*'] <- 'ENGG (ANY)'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'ENGG SYSTEMS--.*'] <- 'ENGG (ANY)'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% '.*ENGINEERING.*'] <- 'ENGG (ANY)'
+
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'MANAGEMENT.*'] <- 'MANAGEMENT'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'BUSINESS.*'] <- 'MANAGEMENT'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'MBA.*'] <- 'MANAGEMENT'
+
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% '.*FINANCE.*'] <- 'FINANCE'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% '.*ACCOUNTING.*'] <- 'FINANCE'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% '.*ECONOMICS.*'] <- 'FINANCE'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% '.*ACCOUNTA.*'] <- 'FINANCE'
+
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'MATHEMATICS.*'] <- 'MATHEMATICS'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'OPERATIONS RESEARCH.*'] <- 'MATHEMATICS'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% '.*STATISTICS.*'] <- 'STATISTICS'
+
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'SCIENCE.*'] <- 'SCIENCE'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'BIOLOG.*'] <- 'SCIENCE'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'CHEMISTRY.*'] <- 'SCIENCE'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'PHYSICS.*'] <- 'SCIENCE'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% 'BIOMED.*'] <- 'SCIENCE'
+
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% '.*EDUCATION.*'] <- 'EDUCATION'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% '.*ENGLISH.*'] <- 'EDUCATION'
+
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% '.*MEDICINE.*'] <- 'MEDICAL'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% '.*DENTIST.*'] <- 'MEDICAL'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% '.*NURSING.*'] <- 'MEDICAL'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% '.*NURSING.*'] <- 'MEDICAL'
+
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% '.*ARTS.*'] <- 'ARTS FASHION'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% '.*FASHION.*'] <- 'ARTS FASHION'
+
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% '.*LAW.*'] <- 'LAW'
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% '.*LEGAL.*'] <- 'LAW'
+
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% '.*MARKETING.*'] <- 'MARKETING'
+
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% '.*ARCHITEC.*'] <- 'ARCHITECTURE'
+
+df$JOB_SUMMARY[df$JOB_INFO_MAJOR %like% '.*CONSTRUCT.*'] <- 'CONSTRUCTION'
 
 
-df <- filter(dat_all, YEAR>=2015)%>% filter(CASE_STATUS %in% c('CERTIFIED','CERTIFIED-EXPIRED') )%>% 
-  group_by(JOB_INFO_MAJOR) %>% dplyr::summarise(count_rec = n(), salary = sum(normalized_wage, na.rm = TRUE)) %>%  
-  arrange(desc(count_rec))
+dat <- df %>%
+  group_by(JOB_SUMMARY) %>%
+  summarise(med_salary = median(normalized_wage))
 
-# write.csv(distinct_df, file="Major.csv")
+dat$JOB_SUMMARY <- factor(dat$JOB_SUMMARY, levels=(dat$JOB_SUMMARY[order(dat$med_salary)]))
+dat <- dat[-which(dat$JOB_SUMMARY == 'OTHER'), ]
 
-df <- sqldf("SELECT COUNT_REC, 
-                    JOB_INFO_MAJOR, 
-                    salary, 
-               case 
-            	  when (JOB_INFO_MAJOR like 'DATA SCIENCE%'           OR 
-                      JOB_INFO_MAJOR  like 'DATA SC%'                OR 
-                      JOB_INFO_MAJOR  like 'DATA ANALY%')            then 'DATA SCIENCE'
-                when ((JOB_INFO_MAJOR like '%COMP%SC% '              OR 
-                       JOB_INFO_MAJOR like '%ENGG%')                 AND 
-                      (JOB_INFO_MAJOR like '%MATH%'))                then 'ENGG_MATH'
-                when ((JOB_INFO_MAJOR like '%COMP%SC%'               OR 
-                       JOB_INFO_MAJOR like '%ENGG%')                 AND 
-                      (JOB_INFO_MAJOR like '%RELATE%'                OR 
-                       JOB_INFO_MAJOR like '%ANY%'))                 OR 
-                      (JOB_INFO_MAJOR    = 'ENGINEERING')            then 'ANY ENGG'
-                when (JOB_INFO_MAJOR  like 'COMPUTER SCIENCE%'       OR 
-                      JOB_INFO_MAJOR  like 'INFORMATION TECHNOLOGY%' OR 
-                      JOB_INFO_MAJOR  like 'SOFTWARE ENGINEERING%'   OR 
-                      JOB_INFO_MAJOR  like 'COMPUTER ENGINEERING%'   OR 
-                      JOB_INFO_MAJOR  like 'COMPUTERS')              then 'COMPUTER SCIENCE'
-                when (JOB_INFO_MAJOR  like 'BUSINESS%'               OR 
-                      JOB_INFO_MAJOR  like 'MANAGEMENT%'             OR
-                      JOB_INFO_MAJOR     = 'MBA')                    then 'MANAGEMENT'
-                when ((JOB_INFO_MAJOR like 'MECH%'                   OR 
-                      JOB_INFO_MAJOR  like '%ELECTR%'                OR 
-                      JOB_INFO_MAJOR  like '%ELECTRO%'               OR 
-                      JOB_INFO_MAJOR  like '%CHEM%'                  OR 
-                      JOB_INFO_MAJOR  like '%CIVIL%'                 OR 
-                      JOB_INFO_MAJOR  like 'PETRO%'                  OR 
-                      JOB_INFO_MAJOR  like '%INDUS%')                AND 
-                     (JOB_INFO_MAJOR  like '%ENGINEERING'))          then 'OTHER ENGINEERING'
-                when (JOB_INFO_MAJOR  like '%ACCOUNTING%'            OR 
-                      JOB_INFO_MAJOR  like '%FINANCE%'               OR 
-                      JOB_INFO_MAJOR  like '%ECONOMICS%'             OR 
-                      JOB_INFO_MAJOR  like 'ACCOUNTA%')              then 'FINANCE'
-                when (JOB_INFO_MAJOR  like 'MATHEMATICS%'            OR 
-                      JOB_INFO_MAJOR  like 'OPERATIONS RESEARCH%')   then 'MATHEMATICS'
-                when (JOB_INFO_MAJOR  like 'COMPUTER SCIENCE%'       OR
-                      JOB_INFO_MAJOR  like 'MATHEMATICS%')           then 'OTHER STEM'
-                when (JOB_INFO_MAJOR  like 'STATISTICS%'             OR 
-                      JOB_INFO_MAJOR  like 'BIOSTATIS%')             then 'STATISTICS'
-                when (JOB_INFO_MAJOR  like 'BIOLOG%'                 OR 
-                      JOB_INFO_MAJOR  like 'CHEMISTRY%'              OR
-                      JOB_INFO_MAJOR  like 'PHYSICS%'                OR
-                      JOB_INFO_MAJOR     = 'SCIENCE'                 OR
-                      JOB_INFO_MAJOR  like 'BIOMEDICAL%')            then  'SCIENCE'
-                when (JOB_INFO_MAJOR  like '%EDUCATION%'             OR 
-                      JOB_INFO_MAJOR     = 'ENGLISH')                then	'EDUCATION'
-                when (JOB_INFO_MAJOR  like 'MEDICINE%'               OR 
-                      JOB_INFO_MAJOR  like 'DENTIST%'                OR 
-                      JOB_INFO_MAJOR  like 'NURSING%'                OR
-                      JOB_INFO_MAJOR  like '%MEDICINE%')             then  'MEDICAL'
-                when (JOB_INFO_MAJOR  like 'ARTS%'                   OR
-                      JOB_INFO_MAJOR  like 'FASHION%')               then 'ARTS FASHION'
-                when (JOB_INFO_MAJOR  like 'LAW%')                   then 'LAW'
-                when (JOB_INFO_MAJOR  like 'MARKETING%')             then 'MARKETING'
-                when (JOB_INFO_MAJOR  like 'ARCHITECTURE%'           OR
-                      JOB_INFO_MAJOR  like '%CONSTRUCTION%')         then 'ARCHITECTURE'
-                when (JOB_INFO_MAJOR  like 'ENG%'                    OR
-                      JOB_INFO_MAJOR  like 'SCI%')                   then 'OTHER STEM'
-                else 'OTHER'
-      END JOB_MAJOR
-      
-      FROM df
-      WHERE JOB_INFO_MAJOR IS NOT NULL
-      ORDER BY COUNT_REC DESC
-      "
-      )
+ggplot(dat, aes(x = JOB_SUMMARY, y = med_salary)) +
+  geom_bar(stat="identity") + 
+  coord_flip() +
+  labs(x = 'Job Field', y = 'Median Salary', title = 'Median PERM Salary by Job Field') +
+  theme(title = element_text(size = 16),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16))
 
-dat <- left_join(dat_all, df, by = 'JOB_INFO_MAJOR')
-dat <- subset(dat, !is.na(salary) )
+df.state <- df %>%
+  select(JOB_SUMMARY, JOB_INFO_WORK_STATE, normalized_wage) %>%
+  group_by(JOB_SUMMARY, JOB_INFO_WORK_STATE) %>%
+  summarise(med_salary = median(normalized_wage))
 
-dat1 <- df %>% 
-  dplyr::group_by(JOB_MAJOR) %>% 
-  dplyr::summarise(mean_salary=sum(salary)/sum(count_rec), count_rec=sum(count_rec)) %>%
-  dplyr::arrange(desc(mean_salary))
+df.state$region <- tolower(df.state$JOB_INFO_WORK_STATE)
+df.state$value <- df.state$med_salary
 
-box_status <- ggplot(dat1, aes(x=JOB_MAJOR, y=mean_salary/1000)) 
-box_status + geom_bar(stat="identity") + coord_flip() +ylab('Mean Salary in 000\'s')
 
-box_status <- ggplot(dat1, aes(x=JOB_MAJOR, y=count_rec)) 
-box_status + geom_bar(stat="identity") + coord_flip() +ylab('Number of Perm Applied\'s')
-
-state_by_value <-
-  dat %>% group_by(JOB_INFO_WORK_STATE) %>%
-  dplyr::summarise(count = n(), mean_salary = mean(normalized_wage, na.rm = TRUE))
-
-state_by_value$region = tolower(state_by_value$JOB_INFO_WORK_STATE)
 data(state.regions)
 
-state_by_value <- merge(state_by_value, state.regions, by.x  = "region", by.y = "region")
-state_by_value$value <- state_by_value$mean_salary
-state_choropleth(state_by_value, title = "Mean Salary by State",num_colors=1)
-
-state_by_value$value <- state_by_value$count
-state_choropleth(state_by_value, title = "Number of Perm by State",num_colors=1)
-
-
-# Desc(dat$salary, main = "Salary distribution", plotit = TRUE)
-# 
-# Desc(dat$CASE_STATUS, plotit = T)
-
-
-# perm count by year
-
-df <- dat_all %>%  dplyr::group_by(YEAR, CASE_STATUS) %>% 
-  dplyr::summarize(AVG_SALARY = mean(normalized_wage, na.rm = T), APPLICATIONS = n()) 
-
-ggplot(df, aes(x=factor(YEAR), y=APPLICATIONS, fill=CASE_STATUS)) + 
-  geom_bar(stat="identity") +xlab("Year")+ylab("Number of Perm")+ 
-  theme(legend.position="bottom") 
-
-df1 <- dat_all %>% filter(CASE_STATUS %in% c('CERTIFIED','CERTIFIED-EXPIRED')) %>%
-  dplyr::group_by(FOREIGN_WORKER_INFO_INST) %>% filter(!is.na(FOREIGN_WORKER_INFO_INST)) %>%
-  dplyr::summarize(AVG_SALARY = mean(normalized_wage, na.rm = T), APPLICATIONS = n()) %>%
-  filter(APPLICATIONS > 10)  %>% arrange(desc(AVG_SALARY))  %>%  top_n(10, AVG_SALARY)
-
-ggplot(df1, aes(reorder(x=factor(FOREIGN_WORKER_INFO_INST), -AVG_SALARY), y=AVG_SALARY)) +
-geom_bar(stat="identity") +xlab("University of Education")+ylab("High Avg. Salary")  + coord_flip() +
-  theme(axis.text.x = element_text(angle=75, vjust=1, size=7), 
-        axis.text.y = element_text(angle=15, vjust=1, size=5))
+c <- StateChoropleth$new(df.state[df.state$JOB_SUMMARY == 'ENGG (ANY)', ])
+c$title <- "Median Salary for Engineering Jobs by State" 
+c$legend <- "Median Wage"
+c$show_labels <- FALSE
+c$render()
 
 
 @
 
 
-\subsection{Offered Wage}
 
-There are some significant outliers in the offered wages for both H-1B and PERM. 
-Depending on the methods used to exclude and deal with outliers, it is possible and likely we may see differing statistical results. 
-One way to mitigate this in the PERM data is to include only approved applications, which mitigates error introduced in denied cases. 
-We can also consider excluding outliers that are 2 standard deviations away from the mean.
+<<perm-med-wage-school, fig.cap='Median wages for PERM workers by University, showing universities with over 1,000 applications.', fig.width=8, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
+# perm count by year
+
+df.uni <- dat_all %>%
+  filter(CASE_STATUS %like% 'CERTIFIED.*') %>%
+  group_by(FOREIGN_WORKER_INFO_INST) %>%
+  summarize(med_salary = median(normalized_wage, na.rm = T), applications = n()) %>%
+  arrange(-applications)
+df.uni <- df.uni[-1,]
+
+df.uni <- df.uni[df.uni$applications > 1000,]
+df.uni$FOREIGN_WORKER_INFO_INST <- factor(df.uni$FOREIGN_WORKER_INFO_INST, levels = (df.uni$FOREIGN_WORKER_INFO_INST[order(df.uni$med_salary)]))
+
+ggplot(df.uni, aes(x = FOREIGN_WORKER_INFO_INST, y = med_salary, fill = applications)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(x = 'University', y = 'Median Salary', title = 'Median Salary by University') +
+  theme(title = element_text(size = 20),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20))
+
+@
+
 
 \subsection{Attorneys}
 
 Something that may be of interest to employers is finding a good attorney to help navigate the legal process. The H-1B data lists the names and states of agent attorneys for fiscal years 2015 and 2016. By filtering and summarizing the data, we can see the top attorney for each state (and Washington, D.C.), based on how many Labor Condition Applications have been certified under their name. 
 
-<<echo=FALSE, fig.height=6, fig.width=4>>=
-h1b.visas <- readRDS('./H1BVisas.rds')
-attorneys <- h1b.visas %>%
+<<attorneys, fig.cap='Top H-1B attorney in each state (and D.C.) by number of applications certified.', fig.width=7, fig.height=10, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
+attorneys <- visas %>%
   filter(!is.na(agent_attorney_first_name)) %>%
   filter(agent_attorney_state == 'DC') %>%
   filter(status == 'CERTIFIED') %>%
@@ -723,7 +699,7 @@ attorneys <- h1b.visas %>%
 # Only take top attorney
 attorneys <- attorneys[1,] 
 for (i in state.abb) {
-  top.attorney <- h1b.visas %>%
+  top.attorney <- visas %>%
     filter(!is.na(agent_attorney_first_name)) %>%
     filter(agent_attorney_state == i) %>%
     filter(status == 'CERTIFIED') %>%
@@ -766,16 +742,23 @@ ggplot(attorneys, aes(x=name, y=n)) +
 \section{Conclusion}
 
 
-Our results confirmed the findings of Mukhopadhyay and Oxborrow \cite{Greencard}, where it was proven that temporary visa workers earn less than the permanent visa holders in the US.
+% TODO:
+
+%Our results confirmed the findings of Mukhopadhyay and Oxborrow \cite{Greencard}, where it was proven that temporary visa workers earn less than the permanent visa holders in the US.
+
 Since H1-B workers are restricted from moving across jobs, mainly because they have already applied for permanent residency with their current employers and cannot switch jobs for fear of being denied and having to start the visa process all over again. Temporary workers see lower wages and in some cases no benefits including healthcare coverage.
 
 It is clear that PERM workers, on average, receive higher wages than H-1B workers. 
 
-The highest paying jobs can be found in the fields of (fields here).
+% TODO:
+% The highest paying jobs can be found in the fields of (fields here).
 
-The highest paying and lowest paying states, normalized by cost of living, are (states here).
+% TODO: Get cost of living?
+% The highest paying and lowest paying states, normalized by cost of living, are (states here).
 
 \pagebreak
+
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -825,6 +808,12 @@ The highest paying and lowest paying states, normalized by cost of living, are (
   Bureau of Labor Statistics
   \textit{Inflation Calculator}
   \href{http://www.bls.gov/data/inflation_calculator.htm}{http://www.bls.gov/data/inflation_calculator.htm}
+  
+\bibitem{CIS}
+  Miano, John
+  \textit{Low Salaries for Low Skills: Wages and Skill Levels for H-1B Computer Workers, 2005}
+  Center for Immigration Studies 
+  \href{http://cis.org/LowSalariesforLowSkills-H1B}{http://cis.org/LowSalariesforLowSkills-H1B}
     
 % Specifications, but not publications: 
 %
@@ -832,7 +821,5 @@ The highest paying and lowest paying states, normalized by cost of living, are (
 % https://www.uscis.gov/working-united-states/permanent-workers
   
 \end{thebibliography}
-
-
 
 \end{document}
