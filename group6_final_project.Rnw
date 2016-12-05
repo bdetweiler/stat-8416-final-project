@@ -508,11 +508,13 @@ Wages in 2005 were \$12,000 below the median on average, and in 2015, we found t
 The case that the CIS report makes is that the H-1B program is being abused to bring in under-qualified entry-level workers to work for less than their US counterparts. While there does seem to be some merit to these claims when analysing computer programmers, as a whole, the H-1B program is far more complex, with a standard deviation of \Sexpr{currency.format(round(sd(fy2015$normalized_wage), 2))}. 
 
 
+\pagebreak
+
 \subsection{Permanent Resident Visas}
 
 Permanent residents (commonly known as greencard holders), have shown a steady increase in median salary over the years, and the number of applications has increased as well.
 
-<<perm-med-wage, fig.cap='Median wage for all PERM workers by year.', fig.width=5, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
+<<perm-med-wage, fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
 
 options(scipen=10)
 
@@ -530,12 +532,13 @@ df.applications <- dat_all %>%
   summarize(APPLICATIONS = n())
 
 df$APPLICATIONS <- df.applications$APPLICATIONS
+df$MED_SALARY <- currency.format(df$MED_SALARY)
 
-kable(df, col.names = c("Year", "Median Salary", "Applications"), format = 'latex', caption = "Average and Median Pay by Case Status", booktabs = TRUE)
+kable(df, col.names = c("Year", "Median Salary", "Applications"), format = 'latex', caption = "PERM Median Pay and Number of Applications by Year", booktabs = TRUE)
 @
 
 
-<<perm-med-wage-eng, fig.cap='Median wage for PERM workers in Engineering Fields by State', fig.width=5, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
+<<perm-med-wage-eng, fig.cap='Median wage for PERM workers in Engineering Fields by State', fig.width=8, fig.height=7, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
 
 # Grouping by study major starts here
 df <- dat_all %>% 
@@ -621,12 +624,18 @@ dat$JOB_SUMMARY <- factor(dat$JOB_SUMMARY, levels=(dat$JOB_SUMMARY[order(dat$med
 dat <- dat[-which(dat$JOB_SUMMARY == 'OTHER'), ]
 
 ggplot(dat, aes(x = JOB_SUMMARY, y = med_salary)) +
-  geom_bar(stat="identity") + 
+  geom_point(stat="identity") + 
   coord_flip() +
-  labs(x = 'Job Field', y = 'Median Salary', title = 'Median PERM Salary by Job Field') +
+  labs(x = 'Job Field', y = 'Median Salary', title = 'Median PERM Salary by Field') +
   theme(title = element_text(size = 16),
         axis.title.x = element_text(size = 16),
         axis.title.y = element_text(size = 16))
+@
+
+For permanent workers, the medical field dominates in terms of salary, coming in with a median pay of \Sexpr{currency.format(dat$med_salary[dat$JOB_SUMMARY == 'MEDICAL'])}. Lawyers come in at a distant second with a median salary of \Sexpr{currency.format(dat$med_salary[dat$JOB_SUMMARY == 'LAW'])}. 
+
+
+<<perm-med-wage-by-state, fig.cap='Median wage for PERM workers in Engineering Fields by State', fig.width=8, fig.height=7, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
 
 df.state <- df %>%
   select(JOB_SUMMARY, JOB_INFO_WORK_STATE, normalized_wage) %>%
@@ -648,9 +657,10 @@ c$render()
 
 @
 
+When looking geographically at engineering jobs, California, Washington, and New York came through as some of the highest paying states, with median salaries of over \$100,000. 
 
 
-<<perm-med-wage-school, fig.cap='Median wages for PERM workers by University, showing universities with over 1,000 applications.', fig.width=8, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
+<<perm-med-wage-school, fig.cap='Median wages for PERM workers by University, showing universities with over 1,000 applications.', fig.width=10, fig.height=7, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
 # perm count by year
 
 df.uni <- dat_all %>%
@@ -673,12 +683,13 @@ ggplot(df.uni, aes(x = FOREIGN_WORKER_INFO_INST, y = med_salary, fill = applicat
 
 @
 
+Finally, we examined which universities were most responsible for providing skilled labor by the number of applicants, as well as how well those applicants are paid. Carnegie Mellon University topped the list with alumni making a median salary of over \$110,000. Jawaharlal Nehru Technological University and Anna University however, top the list of applications with over 3600 certified applicants each.
 
 \subsection{Attorneys}
 
 Something that may be of interest to employers is finding a good attorney to help navigate the legal process. The H-1B data lists the names and states of agent attorneys for fiscal years 2015 and 2016. By filtering and summarizing the data, we can see the top attorney for each state (and Washington, D.C.), based on how many Labor Condition Applications have been certified under their name. 
 
-<<attorneys, fig.cap='Top H-1B attorney in each state (and D.C.) by number of applications certified.', fig.width=7, fig.height=10, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
+<<attorneys, fig.cap='Top H-1B attorney in each state (and D.C.) by number of applications certified.', fig.width=10, fig.height=10, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
 attorneys <- visas %>%
   filter(!is.na(agent_attorney_first_name)) %>%
   filter(agent_attorney_state == 'DC') %>%
@@ -726,7 +737,7 @@ attorneys$name <- paste(attorneys$agent_attorney_last_name, attorneys$agent_atto
 attorneys$name <-  factor(attorneys$name, levels=attorneys$name[order(attorneys$n)])
 
 ggplot(attorneys, aes(x=name, y=n)) +
-  geom_bar(stat="identity") +
+  geom_point(stat="identity") +
   coord_flip() +
   labs(title="Top Attorney in Each State", y="Applications Certified", x="Attorney Name / State")
     
@@ -785,7 +796,7 @@ It is clear that PERM workers, on average, receive higher wages than H-1B worker
 \bibitem{BLS2015}
   Bureau of Labor Statistics
   \textit{May 2015 National Occupational Employment and Wage Estimates}
-  \href{http://www.bls.gov/oes/current/oes_nat.htm}{http://www.bls.gov/oes/current/oes_nat.htm}
+  \href{http://www.bls.gov/oes/current/oes\_nat.htm}{http://www.bls.gov/oes/current/oes\_nat.htm}
   
 \bibitem{Supply}  
   Kerr, William R. Lincoln, William F.
@@ -802,12 +813,12 @@ It is clear that PERM workers, on average, receive higher wages than H-1B worker
 \bibitem{OFLC2015AR}  
   Office of Foreign Labor Certification
   \textit{Annual Report 2015}
-  \href{https://www.foreignlaborcert.doleta.gov/pdf/OFLC_Annual_Report_FY2015.pdf}{https://www.foreignlaborcert.doleta.gov/pdf/OFLC_Annual_Report_FY2015.pdf}
+  \href{https://www.foreignlaborcert.doleta.gov/pdf/OFLC\_Annual\_Report\_FY2015.pdf}{https://www.foreignlaborcert.doleta.gov/pdf/OFLC\_Annual\_Report\_FY2015.pdf}
 
 \bibitem{BLSInflation}
   Bureau of Labor Statistics
   \textit{Inflation Calculator}
-  \href{http://www.bls.gov/data/inflation_calculator.htm}{http://www.bls.gov/data/inflation_calculator.htm}
+  \href{http://www.bls.gov/data/inflation\_calculator.htm}{http://www.bls.gov/data/inflation\_calculator.htm}
   
 \bibitem{CIS}
   Miano, John
