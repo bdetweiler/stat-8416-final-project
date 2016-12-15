@@ -82,6 +82,10 @@ Step <- function(x) {
   return(rval)
 }
 
+options(scipen=999)
+
+visas <- readRDS('H1BVisas.rds')
+dat_all <-  readRDS(file="PermData.rds")
 @
 
 % \newpage
@@ -117,7 +121,7 @@ The H-1B \footnote{It should be noted that the LCA data is referred to generical
 
 Using the UNIX tool \texttt{head -n 10 *.csv > headers.txt}, we took the first ten rows of each file and put them into a separate file. Each of the CSVs first ten rows were then copied and pasted into another spreadsheet, and we undertook a manual effort to match columns of the same identity. We also discarded some excess information that we deemed to be unnecessary for our purposes. 
 
-It is also important to note that there was not always a match for the columns we had selected. For instance, we found some interesting information regarding the attorney used by the employer to file the H-1B application. This was only introduced in the 2015 and 2016 datasets, however, so prior years would have no data for this.
+It is also important to note that there was not always a match for the columns we had selected. For instance, we found some interesting information regarding the attorney used by the employer to file the H-1B application. This was only introduced in the 2015 and 2016 data sets, however, so prior years would have no data for this.
 
 After determining the standard columns, we wrote an import script in \textsf{R} that made use of the function
 \texttt{data.table::fread}. This allowed us to not only quickly read in the file, but also select only the columns of interest, and rename them to the standard naming convention upon read. 
@@ -127,7 +131,7 @@ Once the data was read into individual data frames, additional cleaning rules we
 
 Another normalization task was the wage unit. Some wages were represented as yearly salary, some as hourly, and others as monthly, weekly, and bi-weekly. There can be subtle differences in each type of pay, but these were normalized according to a yearly salary. Hourly wage was multiplied by 40 hours a week and 52 weeks a year. Monthly wage was multiplied by 12, weekly by 52, and bi-weekly by 26. This allows all wages to be treated roughly on the same scale.
 
-With the exception of exporting data to CSV format, the rest of the steps have been combined into a single script, \texttt{csv\_manipulation.R}. \cite{GitHub}
+With the exception of exporting data to CSV format, the rest of the steps have been combined into a single script, \texttt{csv\_manipulation.R}, to produce a final data set of \Sexpr{digits.format(dim(visas)[1])} records. \cite{GitHub}
 
 
 \subsection{PERM Data preparation}
@@ -143,12 +147,13 @@ Column names are standardized to the 2016 version for posterity and the assumpti
 To standardize all columns, we have replaced spaces in column names with underscores and created all column names in upper case.
 The first step in preparing data was to select all the relevant columns and fill empty columns with \texttt{NA}s. 
 
-Once we have all the data available for each year, a final version is created with the raw data without standardizing or further cleaning.
-This dataset can be used by anyone looking for this PERM data and can standardize based on their needs.
+Once we have all the data available for each year, a final combined version is created by standardizing the columns and structure.
+
+This data set can be used by anyone interested in H-1B and PERM hiring trends to expand on our work.
 
 Once we loaded and cleaned the data, we selected only the required columns and exported this as an RDS file. In this process of creating final file, we further reduced the columns and kept only the columns that are essential for our data analysis. 
 
-Multiple XLSX files are initially filtered with the selected 41 columns and merged back into one large file with 622,637 records.
+Multiple XLSX files are initially filtered with the selected 41 columns and merged back into one large file containing \Sexpr{digits.format(dim(dat_all)[1])} records.
 
 Data cleaning specific to this project is also required not just for standardizing data but also to have the data in a specific format.
 
@@ -156,7 +161,7 @@ During the process of creating final file, most columns are read as text and a f
 
 As with the H-1B data, wage units were converted to a unified format and wages were normalized according to an annual rate and added to a new column just with annual salary. The range of salary was also normalized in this step. 
 Employer zip codes were trimmed to 5 digits to keep all the zip codes at the same level of depth. 
-Employment state data was in abbreviated form as well as expanded form, so we needed to standardized to the expanded level for all 50 U.S. states as well as U.S. territories. 
+Employment state data was in abbreviated form as well as expanded form, so we needed to standardize to the expanded level for all 50 U.S. states as well as U.S. territories. 
 Finally, a unique row ID was added to each row.
 
 This cleaned data was saved as an RDS file before moving on to exploratory data analysis.
@@ -188,51 +193,18 @@ Here is a sample of unique values in the categorical data:
 
 \section{Methods}
 
-The numeric data provided by the H-1B and PERM datasets are mostly in the form of wages, both the wage that the employer is offering and the prevailing wage.\footnote{Prevailing wage is defined as the hourly wage, usual benefits and overtime, paid to the majority of workers, laborers, and mechanics within a particular geographic area.} Also of interest, are the number of workers an applicant is filing for, and the implicit number of applications faceted by status and year.
-
-% TODO:
-%A Bayesian analysis was performed on the H-1B wage data. 
-
-%Let $y_i$ denote the normalized wage listed in an LCA application.
-
-%Wage data is usually distributed log-normally. Since we do not perport to be experts in visa law or economics, we will make vague assumptions about our prior beliefs. In other words, we will prefer to use relatively flat priors when estimating our parameters.
-
-%The parameters of interst are $(\mu, \sigma)$. Thus, the model is described as
-
-%\begin{equation}
-%\begin{split}
-    %y_i &\sim LogNormal(\mu_{\ln{Y}}, \tau) \\
-    %\tau &= \frac{1}{\sigma_{\ln{Y}}^2}\\
-    %\sigma_{\ln{Y}} &\sim Uniform(0.001 S_{\ln{Y}}, 1000 * S_{\ln{y}} ) \\
-    %\mu_{\ln{Y}} &\sim Normal\bigg(\overline{\ln{Y}}, 0.001 \frac{1}{S_{\ln{y}}^2}\bigg)\\
-    %\mu_{Y} &= exp\bigg(\mu_{\ln{Y}} + \frac{S_{\ln{Y}}^2}{2}\bigg) \\
-    %\sigma_{Y} &= \sqrt{exp(2 * \mu_{\ln{Y}} + \sigma_{\ln{Y}}^2) * (exp(\sigma_{\ln{Y}}^2)) - 1} \\
-%\end{split}
-%\end{equation}
-
-%In the interest of computational time, we will seek to reduce our dataset while still maintaining a representative distribution.
-
-%For this, we take a random sample of 1,000 from the dataset and overlay the data to see that the sample is representative of the population.
-
+The numeric data provided by the H-1B and PERM data sets are mostly in the form of wages, both the wage that the employer is offering and the prevailing wage.\footnote{Prevailing wage is defined as the hourly wage, usual benefits and overtime, paid to the majority of workers, laborers, and mechanics within a particular geographic area.} Also of interest, are the number of workers an applicant is filing for, and the implicit number of applications faceted by status and year.
 
 
 
 \subsection{Data product}
-
-The data is provided as an interactive \texttt{Shiny} application, that allows the user to filter wages by various criteria. 
-
-The plots consist of distributions and and heat maps of wages across the United States.
-Our objective is to have data that can be sliced by users into different factors; by state, city, employer, job major, function, salary. 
-The data products we produce will help our target audience make informed decision about kinds of employment held by high skilled immigrants, what employers are hiring, and what kinds of skills employers are looking for.
 
 First we will look the number of applications processed since 2008.
 Using these statistics, we can gauge an increasing or decreasing trend in the number of applications processed.
 Although there are caps on the annual number of employment based immigration, an increasing trend or maximum use of employment based immigration would provide insight.
 
 Next, we can look for immigration based on geography. In what regions are employers hiring? 
-We can also look at time series data on hiring by job function, job majors and university of education. 
-Box plots, histograms, bar charts and heat maps are some of those plots we will use to draw inferences.
-
+We also look at year-over-year data on employment trends as well as education and other background information.
 
 \section{Results}
 
@@ -243,9 +215,6 @@ Box plots, histograms, bar charts and heat maps are some of those plots we will 
 \subsection{Labor Condition Agreement Applications}
 
 <<worker-application-status, fig.cap='LCA status from 2008 - 2016', fig.width=7, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
-options(scipen=999)
-
-visas <- readRDS('H1BVisas.rds')
 
 visas.by.status <- select(visas, fy, total_workers, status, visa_class) %>%
     filter(!is.na(status)) %>%
@@ -400,7 +369,7 @@ Figure~\ref{fig:lca-regression} shows the demand for new temporary worker jobs y
 
 \subsection{Prevailing Wage and Actual Wage}
 
-A study done by the Center for Immigration Studies, a non-profit conservative (and often controversial) think tank made claims that for 2005 LCA data, employers were lowballing prevailing wages in order to bring in cheap under-skilled labor. The concept of skill level was defined as the Department of Labor's skill-based prevailing wage system, which doesn't appear in any of our data. 
+A study done by the Center for Immigration Studies, a non-profit conservative think tank made claims that for 2005 LCA data, employers were lowballing prevailing wages in order to bring in cheap under-skilled labor. The concept of skill level was defined as the Department of Labor's skill-based prevailing wage system, which doesn't appear in any of our data. 
 
 We attempted to recreate parts of this study for 2015 data to see if things had changed over a decade later. 
 
@@ -577,7 +546,6 @@ Permanent residents (commonly known as green card holders), have shown a steady 
 
 options(scipen=10)
 
-dat_all <-  readRDS(file="PermData.rds")
 
 # Overview
 # average pay of perm applications
@@ -834,7 +802,7 @@ We also found that the highest paid graduates tend to come from Carnegie Mellon 
 
 We were very ambitious when we started this project. Our end goal was to build a Shiny app that would allow users to filter jobs down to the individual lat-long coordinates and determine where the highest paying jobs are when accounting for cost of living. 
 
-We built a working Shiny app and had collected geographical data for each company in the PERM data set. However, we ran into resource limitations on ShinyApps.io. The dataset is large, and even when removing unnecessary columns, the load time for the application exceeded the memory of the free accounts offered on ShinyApps.io. Aggregating the data reduced the usefulness of the app, making it cumbersome and inflexible.
+We built a working Shiny app and had collected geographical data for each company in the PERM data set. However, we ran into resource limitations on ShinyApps.io. The data set is large, and even when removing unnecessary columns, the load time for the application exceeded the memory of the free accounts offered on ShinyApps.io. Aggregating the data reduced the usefulness of the app, making it cumbersome and inflexible.
 
 As a future project, it would be ideal to have a paid host that could accommodate the processing requirements of this data. 
 
