@@ -5,29 +5,20 @@ date: December 15th, 2016
 
 Agenda
 ========================================================
- - Overview
- - Visa Class
-  - H-1B
-  - H-1B1 Singapore
-  - H-1B1 Chile
-  - E-3 Australia
-  - PERM
- - Wage Comparison
- - Trends Over Time
- - State-level Trends
 
-
-Overview
+ - H-1B
+   - Center for Immigration Studies Report
+ - PERM (Program Electronic Review Management)
+   - Statistics
+   - State-Level Salaries
+   - Trends Over Time
+  
+H-1B Overview
 ========================================================
 
- - Applying for a Visa 101
  - Demand > Supply
   - 172,500 H-1B Labor Condition Applications submitted in FY 2015
   - Only 85,000 total available
- - Program Electronic Review Management - PERM (Green Card)
-  - Can apply after a lengthy sponsorship process
-  - Must prove American worker cannot do the job 
-  - Burden of proof on employer
 
 How to Work in the U.S.
 ========================================================
@@ -147,6 +138,28 @@ ggplot(state.df.m, aes(x = perm.state, y=value, group=variable, fill=variable)) 
   scale_x_discrete(labels=c("CA"="California", "NJ"="New Jersey", "TX"="Texas", "WA"="Washington")) +
   scale_y_continuous(labels = comma, breaks=c(50000, 75000, 100000, 120000))
 ```
+
+PERM Statistics
+========================================================
+
+ - No considerable salary difference within education levels
+
+***
+
+```{r echo=FALSE, fig.width=10, message=FALSE, warning=FALSE, error=FALSE}
+ed.title <- factor(c("HS", "Associate's", "Bachelor's", "Master's", "Doctorate"), levels=c("HS", "Associate's", "Bachelor's", "Master's", "Doctorate"))
+ed.count <- c(414, 281, 24535, 28462, 2088)
+ed.sal <- c(56415, 70556, 101941, 102162, 97746)
+
+ed.df <- data.frame(ed.title, ed.count, ed.sal)
+colnames(ed.df) <- c('Title', 'Count', 'Avg Salary')
+
+ggplot(ed.df, aes(x = Title, y=`Avg Salary`)) +
+  geom_point(aes(size = Count)) +
+  labs(x = "Education Level", y = "Average Salary", title="PERM Mean Salaries by Education, FY2016", size="Applications") +
+  scale_y_continuous(labels = comma, breaks=c(55000, 70000, 95000, 100000))
+```
+
 
 PERM Statistics
 ========================================================

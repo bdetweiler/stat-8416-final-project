@@ -5,29 +5,20 @@ date: December 15th, 2016
 
 Agenda
 ========================================================
- - Overview
- - Visa Class
-  - H-1B
-  - H-1B1 Singapore
-  - H-1B1 Chile
-  - E-3 Australia
-  - PERM
- - Wage Comparison
- - Trends Over Time
- - State-level Trends
 
-
-Overview
+ - H-1B
+   - Center for Immigration Studies Report
+ - PERM (Program Electronic Review Management)
+   - Statistics
+   - State-Level Salaries
+   - Trends Over Time
+  
+H-1B Overview
 ========================================================
 
- - Applying for a Visa 101
  - Demand > Supply
   - 172,500 H-1B Labor Condition Applications submitted in FY 2015
   - Only 85,000 total available
- - Program Electronic Review Management - PERM (Green Card)
-  - Can apply after a lengthy sponsorship process
-  - Must prove American worker cannot do the job 
-  - Burden of proof on employer
 
 How to Work in the U.S.
 ========================================================
@@ -105,6 +96,16 @@ PERM Statistics
 ***
 
 ![plot of chunk unnamed-chunk-3](group6_presentation-figure/unnamed-chunk-3-1.png)
+
+PERM Statistics
+========================================================
+
+ - No considerable salary difference within education levels
+
+***
+
+![plot of chunk unnamed-chunk-4](group6_presentation-figure/unnamed-chunk-4-1.png)
+
 
 PERM Statistics
 ========================================================
