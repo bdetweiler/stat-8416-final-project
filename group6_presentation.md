@@ -122,3 +122,9 @@ State-Level Salaries
 ========================================================
 
 ![title](mean-salary-by-state.png)
+
+Trends Over Time
+========================================================
+
+![title](visa-types-by-year.png)
+![title](mean-salary-by-year.png)
