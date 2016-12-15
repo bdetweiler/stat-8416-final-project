@@ -21,17 +21,8 @@
 
 \begin{abstract}
 
-Foreign born workers make up 17\% of the United States workforce. In 2014, nearly one million foreign nationals became lawful permanent residents in the United States. Of those one million, 140,000 came through visas which are allocated to employment based residency. Where are these workers, and what do the demographics look like? How does their compensation measure up? Here, we use statistical analysis to examine visa application data from the U.S. Department of Labor from 2008 to 2016. We intend to create an interactive data product that will make this publicly available information more accessible to the students who are entering the workforce, as well as to US citizens and permanent residents. This will empower them to competitively position themselves in the job market by making more informed decisions.
+Foreign born workers make up 16.7\% of the United States workforce. In 2014, nearly one million foreign nationals became lawful permanent residents in the United States. Of those one million, 140,000 came through visas which are allocated to employment based residency. Where are these workers, and what do the demographics look like? How does their compensation measure up? Here, we use statistical analysis to examine visa application data from the U.S. Department of Labor from 2008 to 2016. We analyze similar reports done in previous years to determine what changes, if any have taken place in the last ten years.
 
-% Not sure if we need to cite sources in the abstract, but here they are if we need them:
-% 17% of workforce: 
-% http://www.migrationpolicy.org/article/frequently-requested-statistics-immigrants-and-immigration-united-states
-% 140,000 visas:
-% https://www.fas.org/sgp/crs/homesec/R42048.pdf
-% Even though this set of data provides insightful information about the population of foreign workers in America, we lack information about non US citizens that legally married US citizens and thus not needing a work visa. 
-
-% Immigration statistics
-%https://www.us-immigration.com/how-many-immigration-applications-filed-each-year/
 \end{abstract}
 
 
@@ -41,6 +32,8 @@ Foreign born workers make up 17\% of the United States workforce. In 2014, nearl
 # Include necessary libraries
 library(data.table)
 library(mgcv)
+library(png)
+library(grid)
 library(bit64)
 library(ggplot2)
 library(knitr)
@@ -66,6 +59,16 @@ currency.format <- function(x, cents = FALSE) {
   
   return(paste("\\$", format(x, big.mark=",", digits = 2, nsmall = dig), sep=""))
 }
+
+currency.format.kable <- function(x, cents = FALSE) { 
+  dig <- 0
+  if (cents) {
+    dig <- 2
+  } 
+  
+  return(paste("$", format(x, big.mark=",", digits = 2, nsmall = dig), sep=""))
+}
+
 
 Mode <- function(x) {
   ux <- unique(x)
@@ -306,7 +309,7 @@ h1b.proportion <- round(h1b.sum / (other.sum + h1b.sum) * 100, digits = 2)
 
 @
 
-The number of workers requested via LCA has shown a marked increase since 2010 (Certified, Denied, and Withdrawn). It is also immediately clear, from Figure~\ref{fig:worker-application-status} that H-1B LCAs dwarf E-3 and H-1B1 applications, making up \Sexpr{h1b.proportion}\% of all LCA applications. \ footnote{2010 data did not include the visa classification}
+The number of workers requested via LCA has shown a marked increase since 2010 (Certified, Denied, and Withdrawn). It is also immediately clear, from Figure~\ref{fig:worker-application-status} that H-1B LCAs dwarf E-3 and H-1B1 applications, making up \Sexpr{h1b.proportion}\% of all LCA applications. \footnote{2010 data did not include the visa classification}
 
 
 %<<outliers-by-status, fig.cap='Outliers in number of workers requested can be attributed to human error', fig.width=6, fig.height=4, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>= 
@@ -364,7 +367,7 @@ visas.by.status.vs.jobs$Type[visas.by.status.vs.jobs$Type == 'JOBS'] <- 'Jobs'
 
 
 
-ggplot(visas.by.status.vs.jobs, aes(x = Type, y = Jobs, fill = Type))  +
+p <- ggplot(visas.by.status.vs.jobs, aes(x = Type, y = Jobs, fill = Type))  +
   geom_bar(stat = "identity") +
   scale_x_discrete(labels=NULL) +
   facet_grid(. ~ fy) +
@@ -372,6 +375,18 @@ ggplot(visas.by.status.vs.jobs, aes(x = Type, y = Jobs, fill = Type))  +
   theme(title = element_text(size = 20),
         axis.title.x = element_text(size = 20),
         axis.title.y = element_text(size = 20))
+
+p
+
+filename <- "lcas-vs-jobs.png"
+ggsave(filename = filename,
+       plot = p,
+       width = 22, 
+       height = 10, 
+       units = "cm")
+# plotPNG <- readPNG(filename)
+# plotRaster <- as.raster(plotPNG)
+# grid.raster(plotRaster)
 @
 
 
@@ -380,7 +395,7 @@ fy <- 2007
 visas.count <- visas.by.status$tot[which(visas.by.status$fy > fy)]
 visas.year <- visas.by.status$fy[which(visas.by.status$fy > fy)]
 
-plot(x = visas.year, 
+p <- plot(x = visas.year, 
      y = visas.count, 
      col="red", 
      ylim = c(0, max(visas.count) + 1000),
@@ -396,6 +411,15 @@ visas.lm.pval <- visas.lm.summary$coefficients[2, "Pr(>|t|)"]
 visas.lm.rsq <- visas.lm.summary$r.squared
 next.year <- data.frame(visas.year = 2017)
 next.year.pred <- predict(visas.lm, next.year, interval="predict")[1, 'fit']
+
+p
+
+filename <- "lca-requests-lin-reg.png"
+ggsave(filename = filename,
+       plot = p,
+       width = 22, 
+       height = 10, 
+       units = "cm")
 @
 
 Figure~\ref{fig:lca-regression} shows the demand for new temporary worker jobs year over year suggests a strong linear relation with $\rho = $ \Sexpr{visas.lm.rsq} and a $p$-value of \Sexpr{visas.lm.pval}. We could estimate that if things continue on this course, in 2017 we should expect to see \Sexpr{digits.format(round(next.year.pred), sci.digits = 0)} LCA applications certified.
@@ -448,28 +472,61 @@ median.vs.wage.pro <- round(mean(Step(fy2015.programmers$A_MEDIAN - fy2015.progr
 pw.delta.pro <- mean(fy2015.programmers$A_MEDIAN - fy2015.programmers$normalized_prevailing_wage)
 median.vs.pw.pro <- round(mean(Step(fy2015.programmers$A_MEDIAN - fy2015.programmers$normalized_prevailing_wage)) * 100, digits = 2)
 
-ggplot(fy2015.programmers, aes(x=jitter(A_MEDIAN), y=jitter(normalized_prevailing_wage), col=visa_class)) +
+p <- ggplot(fy2015.programmers, aes(x=jitter(A_MEDIAN), 
+                                    y=jitter(normalized_prevailing_wage), 
+                                    col=visa_class)) +
   geom_point() +
-  geom_abline(intercept = 0, slope = 1, col = "red", size = 1) +
-  labs(title = "2015 Computer Programmer Prevailing Wages", x = "Median Wage", y = "LCA Wage", colour = "Visa Class") +
+  geom_abline(intercept = 0, 
+              slope = 1, 
+              col = "red", 
+              size = 1) +
+  labs(title = "2015 Computer Programmer Prevailing Wages", 
+       x = "Median Wage", 
+       y = "LCA Wage", 
+       colour = "Visa Class") +
   theme(title = element_text(size = 20),
         axis.title.x = element_text(size = 20),
         axis.title.y = element_text(size = 20))
+
+filename <- "visa-programmer-pw-vs-median.png"
+ggsave(filename = filename,
+       plot = p,
+       width = 22, 
+       height = 10, 
+       units = "cm")
+plotPNG <- readPNG(filename)
+plotRaster <- as.raster(plotPNG)
+grid.raster(plotRaster)
 @
 
 <<visa-programmer-wage-vs-median, fig.cap='Actual visa wages for Computer Programmers compared with the US median wage (compared by state). The red line indicates where the visa wage equals the median wage.', fig.width=10, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
 
-ggplot(fy2015.programmers, aes(x=jitter(A_MEDIAN), y=jitter(normalized_wage), col=visa_class)) +
+p <- ggplot(fy2015.programmers, aes(x = jitter(A_MEDIAN), 
+                                    y = jitter(normalized_wage), 
+                                    col = visa_class)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, col = "red", size = 1) +
-  labs(title = "2015 Computer Programmer Wages", x = "Median Wage", y = "LCA Wage", colour = "Visa Class") +
+  labs(title = "2015 Computer Programmer Wages", 
+       x = "Median Wage", 
+       y = "LCA Wage", 
+       colour = "Visa Class") +
   theme(title = element_text(size = 20),
         axis.title.x = element_text(size = 20),
         axis.title.y = element_text(size = 20))
+
+filename <- "visa-programmer-wage-vs-median.png"
+ggsave(filename = filename,
+       plot = p,
+       width = 22, 
+       height = 10, 
+       units = "cm")
+plotPNG <- readPNG(filename)
+plotRaster <- as.raster(plotPNG)
+grid.raster(plotRaster)
 @
 
 
-The 2005 report, which focussed specifically on computer programmers, stated that 84\% of H-1B workers were below the median U.S. wage. For the 2015 data, we found that \Sexpr{median.vs.pw.pro}\% of prevailing wage claims fall below the median wage for a given occupation and state (see Figure~\ref{fig:visa-programmer-pw-vs-median}). This seems to back up the claims of the CIS report, that employers are making dubious prevailing wage claims in order to hire cheaper programmers. 
+The 2005 report, which focussed specifically on computer programmers, stated that 84\% of H-1B prevailing wage claims fell below the median U.S. wage when compared with the same occupation in the same state. For the 2015 data, we found that \Sexpr{median.vs.pw.pro}\% of prevailing wage claims fall below the median (see Figure~\ref{fig:visa-programmer-pw-vs-median}). This seems to back up the claims of the CIS report, that employers are making dubious prevailing wage claims in order to hire cheaper programmers. 
 
 
 <<visa-pw-vs-median, fig.cap='Claimed prevailing wage compared with the equivalent median wage by occupation and state. The red line indicates where the visa wage equals the median wage.', fig.width=10, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
@@ -479,31 +536,59 @@ median.vs.wage <- round(mean(Step(fy2015$A_MEDIAN - fy2015$normalized_wage)) * 1
 pw.delta <- mean(fy2015$A_MEDIAN - fy2015$normalized_prevailing_wage)
 median.vs.pw <- round(mean(Step(fy2015$A_MEDIAN - fy2015$normalized_prevailing_wage)) * 100, digits = 2)
 
-ggplot(fy2015, aes(x=jitter(A_MEDIAN), y=jitter(normalized_prevailing_wage), col=visa_class)) +
+p <- ggplot(fy2015, aes(x = jitter(A_MEDIAN), 
+                        y = jitter(normalized_prevailing_wage), 
+                        col = visa_class)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, col = "red", size = 1) +
-  labs(title = "2015 LCA Prevailing Wage vs. Median US Wage", x = "Median Wage", y = "LCA Prevailing Wage", colour = "Visa Class") +
+  labs(title = "2015 LCA Prevailing Wage vs. Median US Wage", 
+       x = "Median Wage", 
+       y = "LCA Prevailing Wage", 
+       colour = "Visa Class") +
   theme(title = element_text(size = 20),
         axis.title.x = element_text(size = 20),
         axis.title.y = element_text(size = 20))
+
+filename <- "visa-pw-vs-median.png"
+ggsave(filename = filename,
+       plot = p,
+       width = 22, 
+       height = 10, 
+       units = "cm")
+plotPNG <- readPNG(filename)
+plotRaster <- as.raster(plotPNG)
+grid.raster(plotRaster)
 @
 
 
 <<visa-wage-vs-median, fig.cap='Actual visa wages compared with the US median wage by occupation and state. The red line indicates where the visa wage equals the median wage.', fig.width=10, fig.height=5, fig.align='center', fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
-ggplot(fy2015, aes(x=jitter(A_MEDIAN), y=jitter(normalized_wage), col=visa_class)) +
+p <- ggplot(fy2015, aes(x=jitter(A_MEDIAN), y=jitter(normalized_wage), col=visa_class)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, col = "red", size = 1) +
-  labs(title = "2015 LCA Wage vs. Median US Wage", x = "Median Wage", y = "LCA Wage", colour = "Visa Class") +
+  labs(title = "2015 LCA Wage vs. Median US Wage", 
+       x = "Median Wage", 
+       y = "LCA Wage", 
+       colour = "Visa Class") +
   theme(title = element_text(size = 20),
         axis.title.x = element_text(size = 20),
         axis.title.y = element_text(size = 20))
+
+filename <- "visa-wage-vs-median.png"
+ggsave(filename = filename,
+       plot = p,
+       width = 22, 
+       height = 10, 
+       units = "cm")
+plotPNG <- readPNG(filename)
+plotRaster <- as.raster(plotPNG)
+grid.raster(plotRaster)
 @
 
 The CIS study claimed that in FY 2005, H-1B employer prevailing wage claims averaged \Sexpr{currency.format(16000)} below the median wage for U.S. computer workers in the same location and occupation. Here, we look at computer programmers specifically in 2015, and we can see that the employer prvailing wage claims average about \Sexpr{currency.format(pw.delta)} below the median, which is \Sexpr{currency.format(round(pw.delta - 16000, 2))} worse than 10 years ago, or roughly on par with the 21\% inflation. \cite{BLSInflation}
 
 However, when looking at the H-1B program as a whole, the numbers improve significantly. We found that the prevailing wage claims in general were only \Sexpr{round(median.vs.pw, 2)}\% below the median on average. There is certainly room for improvement here, but this is a \Sexpr{90 - median.vs.pw}\% difference in the claims made by the he CIS report. When comparing actual wages, \Sexpr{median.vs.wage}\% fell below the median, which is a \Sexpr{84 - median.vs.wage}\% improvement over what was reported. 
 
-Wages in 2005 were \$12,000 below the median on average, and in 2015, we found this had not really changed. In general, however, wages were only \Sexpr{currency.format(wage.delta)} below the median on average. 
+Wages in 2005 were \$12,000 below the median on average, and in 2015, we found this had not really changed. In general, however, wages were only \Sexpr{currency.format(wage.delta)} below the median on average. The standard deviation of prevailing wage claims was \Sexpr{currency.format(round(sd(fy2015$normalized_prevailing_wage), 2))}. 
 
 The case that the CIS report makes is that the H-1B program is being abused to bring in under-qualified entry-level workers to work for less than their US counterparts. While there does seem to be some merit to these claims when analysing computer programmers, as a whole, the H-1B program is far more complex, with a standard deviation of \Sexpr{currency.format(round(sd(fy2015$normalized_wage), 2))}. 
 
@@ -512,7 +597,7 @@ The case that the CIS report makes is that the H-1B program is being abused to b
 
 \subsection{Permanent Resident Visas}
 
-Permanent residents (commonly known as greencard holders), have shown a steady increase in median salary over the years, and the number of applications has increased as well.
+Permanent residents (commonly known as green card holders), have shown a steady increase in median salary over the years, and the number of applications has increased as well.
 
 <<perm-med-wage, fig.pos='hbtp', out.width='.45\\linewidth', echo=FALSE, error=FALSE, warning=FALSE, message=FALSE>>=
 
@@ -532,7 +617,7 @@ df.applications <- dat_all %>%
   summarize(APPLICATIONS = n())
 
 df$APPLICATIONS <- df.applications$APPLICATIONS
-df$MED_SALARY <- currency.format(df$MED_SALARY)
+df$MED_SALARY <- currency.format.kable(df$MED_SALARY)
 
 kable(df, col.names = c("Year", "Median Salary", "Applications"), format = 'latex', caption = "PERM Median Pay and Number of Applications by Year", booktabs = TRUE)
 @
@@ -673,14 +758,21 @@ df.uni <- df.uni[-1,]
 df.uni <- df.uni[df.uni$applications > 1000,]
 df.uni$FOREIGN_WORKER_INFO_INST <- factor(df.uni$FOREIGN_WORKER_INFO_INST, levels = (df.uni$FOREIGN_WORKER_INFO_INST[order(df.uni$med_salary)]))
 
-ggplot(df.uni, aes(x = FOREIGN_WORKER_INFO_INST, y = med_salary, fill = applications)) +
+p <- ggplot(df.uni, aes(x = FOREIGN_WORKER_INFO_INST, y = med_salary, fill = applications)) +
   geom_bar(stat = "identity") +
   coord_flip() +
   labs(x = 'University', y = 'Median Salary', title = 'Median Salary by University') +
   theme(title = element_text(size = 20),
         axis.title.x = element_text(size = 20),
         axis.title.y = element_text(size = 20))
+p
 
+filename <- "schools.png"
+ggsave(filename = filename,
+       plot = p,
+       width = 22, 
+       height = 10, 
+       units = "cm")
 @
 
 Finally, we examined which universities were most responsible for providing skilled labor by the number of applicants, as well as how well those applicants are paid. Carnegie Mellon University topped the list with alumni making a median salary of over \$110,000. Jawaharlal Nehru Technological University and Anna University however, top the list of applications with over 3600 certified applicants each.
@@ -736,10 +828,19 @@ for (i in state.abb) {
 attorneys$name <- paste(attorneys$agent_attorney_last_name, attorneys$agent_attorney_state, sep="-")
 attorneys$name <-  factor(attorneys$name, levels=attorneys$name[order(attorneys$n)])
 
-ggplot(attorneys, aes(x=name, y=n)) +
+p <- ggplot(attorneys, aes(x=name, y=n)) +
   geom_point(stat="identity") +
   coord_flip() +
   labs(title="Top Attorney in Each State", y="Applications Certified", x="Attorney Name / State")
+
+p
+
+filename <- "attorneys.png"
+ggsave(filename = filename,
+       plot = p,
+       width = 22, 
+       height = 40, 
+       units = "cm")
     
 @
 
@@ -777,7 +878,32 @@ It is clear that PERM workers, on average, receive higher wages than H-1B worker
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{thebibliography}{9}
 
+\bibitem{NewsRelease}
+  U.S. Department of Labor,
+  Bureau of Labor Statistics,
+  \textit{News Release}, May 19, 2016
+  \href{https://www.bls.gov/news.release/archives/forbrn_05192016.pdf}{https://www.bls.gov/news.release/archives/forbrn_05192016.pdf}
+ 
+\bibitem{NumericalLimits}
+  Argueta, Carla N.
+  Congressional Research Service
+  \textit{Numerical Limits on Permanent Employment-Based Immigration: Analysis of the Per-country Ceilings},
+  July 28, 2016
+  \href{https://fas.org/sgp/crs/homesec/R42048.pdf}{https://fas.org/sgp/crs/homesec/R42048.pdf}
+ 
+\bibitem{AIC} 
+  American Immigration Center
+  \textit{How Many Immigration Applications Are Filed Each Year?}
+\href{https://www.us-immigration.com/how-many-immigration-applications-filed-each-year/}{https://www.us-immigration.com/how-many-immigration-applications-filed-each-year/}
 
+  
+\bibitem{MigrationPolicy} 
+  Zong, Jie
+  Batalova, Jeanne 
+  Migration Policy Institute
+  \textit{Frequently Requested Statistics on Immigrants and Immigration in the United States}, April 14, 2016
+  \href{http://www.migrationpolicy.org/article/frequently-requested-statistics-immigrants-and-immigration-united-states}{http://www.migrationpolicy.org/article/frequently-requested-statistics-immigrants-and-immigration-united-states}
+  
 \bibitem{DoL}
   U.S. Department of Labor,
   Office of Foreign Labor Certification Disclosure Data,
@@ -785,7 +911,8 @@ It is clear that PERM workers, on average, receive higher wages than H-1B worker
   
 \bibitem{GitHub}
   Detweiler, Brian.
-  GitHub, stat-8416-final-project,
+  GitHub
+  \textit{stat-8416-final-project}
   \href{https://github.com/bdetweiler/stat-8416-final-project}{https://github.com/bdetweiler/stat-8416-final-project}
 
 \bibitem{BLS}

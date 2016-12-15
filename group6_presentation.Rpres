@@ -1,7 +1,6 @@
 Analysis of Foreign Workers in the U.S.
 ========================================================
-author: Group 6: 
-Arun Ranganathan / Brian Detweiler / Jacques Anthony
+author: Arun Ranganathan / Brian Detweiler / Jacques Anthony
 date: December 15th, 2016
 
 Agenda
@@ -16,7 +15,6 @@ Agenda
  - Wage Comparison
  - Trends Over Time
  - State-level Trends
- - Demo
 
 
 Overview
@@ -26,54 +24,143 @@ Overview
  - Demand > Supply
   - 172,500 H-1B Labor Condition Applications submitted in FY 2015
   - Only 85,000 total available
- - PERM (green card) visas
+ - Program Electronic Review Management - PERM (Green Card)
   - Can apply after a lengthy sponsorship process
   - Must prove American worker cannot do the job 
   - Burden of proof on employer
 
 How to Work in the U.S.
 ========================================================
+ - Job must qualify as speciality occupation 
+   - >= Bachelor's degree 
+   - Licenses or special trainings may be considered
+ - First 20,000 H-1B awarded Master's degree+
+
+
+***
 
 ![title](how_to_work_in_the_us.png)
 
-H-1B Wages by State
+
+
+Center for Immigration Studies Report, FY 2005
+========================================================
+ - Claims:
+   - Businesses abusing H-1B for cheap labor
+   - Computer Programmers
+     - 84% of prevailing wage claims below the median
+     - $16,000 below median on average
+     
+   
+Our Findings, Computer Programmers FY 2015
+========================================================
+ - 88.92% of prevailing wage claims below the median
+ - Average prevailing wage claim was $17,510 below median
+   - On par with 21% inflation
+ - Essentially no change since 2005
+![title](visa-programmer-pw-vs-median.png)
+   
+
+Our Findings, All Occupations FY 2015
+========================================================
+ - H-1B Prevailing Wages
+   - 72.68% prevailing wage claims below median
+   - Standard deviation of $23,159
+![title](visa-pw-vs-median.png)
+
+Our Findings, All Occupations FY 2015
+========================================================
+ - H-1B Actual Wages
+   - 39.24% prevailing wage claims below median
+   - $5,861 below median on average
+   - Standard deviation of $31,895
+![title](visa-wage-vs-median.png)
+   
+PERM Visas
+========================================================
+ - First step of Green Card process
+ - Employer must be prepared to hire applicant 
+   - Must prove there are not enough US citizens or permanent residents qualified for the position
+
+```{r echo=FALSE, fig.width=10, message=FALSE, warning=FALSE, error=FALSE}
+#library(data.table, quietly = TRUE, warn.conflicts = FALSE)
+library(ggplot2, quietly = TRUE, warn.conflicts = FALSE)
+library(dplyr, quietly = TRUE, warn.conflicts = FALSE)
+library(reshape2, quietly = TRUE, warn.conflicts = FALSE)
+library(scales, quietly = TRUE, warn.conflicts = FALSE)
+
+FY_2014 <- c(40554, 48801, 43156, 8362, 10723)
+FY_2013 <- c(38978, 63026, 43632, 6931, 8543)
+FY_2012 <- c(39316, 50959, 39229, 7866, 6628)
+PERM.type <- c('EB-1', 'EB-2', 'EB-3', 'EB-4', 'EB-5')
+
+eb <- data.frame(PERM.type, FY_2014, FY_2013, FY_2012)
+eb.m <- melt(eb, id.vars="PERM.type")
+ggplot(eb.m, aes(x=variable, y=value, fill=PERM.type, group=PERM.type)) +
+  geom_bar(stat="identity") +
+  labs(x = "Fiscal Year", y="Visas Processed", fill="PERM Type", title="PERM Visas Processed") +
+  scale_x_discrete(labels=c("2014", "2013", "2012"))
+```
+
+
+PERM Statistics
+========================================================
+ - Number of Approved PERM visas increasing drastically
+   - Doubled from 2010 to 2016
+ - However, there was no considerable salary difference  within education levels
+
+***
+
+```{r echo=FALSE, fig.width=10, message=FALSE, warning=FALSE, error=FALSE}
+perm.year <- c(2008, 2009, 2010, 2011, 2013, 2014, 2015, 2016)
+perm.count <- c(21092, 16041, 32657, 18714, 13742, 35615, 41223, 63709)
+perm.salary <- c(111437, 104257, 135567, 114053, 111551, 116833, 90882, 117454)
+
+perm.df <- data.frame(perm.year, perm.count, perm.salary)
+
+ggplot(perm.df, aes(x = perm.year, y=perm.count)) +
+  geom_line(stat="identity") +
+  labs(x = "Fiscal Year", y = "Approved Visas")
+```
+
+PERM Statistics
+========================================================
+ - PERM salaries 15% higher than H-1B on average (FY 2016)
+ - Salaries vary widely from state to state
+ - Salary gap tends to narrow with more prestigious job titles
+ - QUIZ: Average UNO student vs. Harvard PERM salary?
+ 
+***
+
+```{r echo=FALSE, fig.width=10, message=FALSE, warning=FALSE, error=FALSE}
+perm.state <- c("CA", "WA", "TX", "NJ")
+perm.sal <- c(121883, 98836, 90758, 102008)
+h1b.sal <- c(118047, 128925, 73520, 70602)
+
+state.df <- data.frame(perm.state, perm.sal, h1b.sal)
+colnames(state.df) <- c('perm.state', 'PERM', 'H-1B')
+state.df.m <- melt(state.df, id.vars="perm.state")
+
+ggplot(state.df.m, aes(x = perm.state, y=value, group=variable, fill=variable)) +
+  geom_bar(stat="identity", position="dodge") +
+  labs(x = "State", y = "Salary", title="Software Engineer Salaries", fill="Visa Type") +
+  scale_x_discrete(labels=c("CA"="California", "NJ"="New Jersey", "TX"="Texas", "WA"="Washington")) +
+  scale_y_continuous(labels = comma, breaks=c(50000, 75000, 100000, 120000))
+```
+
+PERM Statistics
 ========================================================
 
-```{r echo=FALSE, fig.width=10}
-library(data.table)
-library(ggplot2)
-library(dplyr)
+| Employer      | Applications  | Average Salary  |
+| ------------- |:-------------:| ---------------:|
+| Microsoft     | 15,089        | $103,650        |
+| Cognizant     | 13,387        | $73,085         |
+| Intel         | 6,212         | $90,279         |
+| Google        | 5,101         | $121,872        |
+| Amazon        | 3,406         | $98,049         |
 
-final.shiny <- readRDS('shiny/ShinyDatset.rds')
 
-######################## Presentation stuff
+State-Level Salaries
+========================================================
 
-    # Input conditionals
-    final.shiny.plot <- final.shiny %>%
-                       dplyr::filter(normalized_wage > 0) %>%
-                       dplyr::filter(normalized_wage < 500000) %>%
-                       dplyr::filter(visa_class %in% 'H-1B')
-   
-    # Final aggregation 
-    final.shiny.plot <- final.shiny.plot %>% 
-                       group_by(employer_state, visa_class) %>%           #  We'll also allow grouping by fy and visa_class
-                       summarise(med = median(normalized_wage), 
-                                 mean = mean(normalized_wage), 
-                                 min = min(normalized_wage),
-                                 max = max(normalized_wage),
-                                 n = n()) %>%
-                       arrange(med)
-
-    final.shiny.plot$employer_state <- 
-      factor(final.shiny.plot$employer_state, levels = final.shiny.plot$employer_state)
-   
-    neb.med <- final.shiny.plot$med[which(final.shiny.plot$employer_state == 'nebraska')]
-    
-    ggplot(final.shiny.plot, aes(y = med, x = employer_state, col = n)) +
-      geom_point(stat="identity") +
-      scale_y_continuous(labels = scales::comma) +
-      scale_colour_gradient(name="LCA Requests", labels = scales::comma, low = "#f7b7b7", high = "#8e0000") +
-      geom_text(aes(x = "nebraska", y = neb.med - 10000, label = paste0("Nebraska median: $", neb.med))) +
-      coord_flip() +
-      labs(x = "State", y = "Median Wage")
-```
+![title](mean-salary-by-state.png)
