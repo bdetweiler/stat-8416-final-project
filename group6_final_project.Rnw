@@ -132,16 +132,7 @@ With the exception of exporting data to CSV format, the rest of the steps have b
 
 \subsection{PERM Data preparation}
 
-% I think we can assume the user has downloaded the data
-% We'll have links to the DoL website in our citations
-%Download PERMFY2008.xlsx to PERMDisclosureDataFY16.xlsx under disclosure data from department of labor website, under disclosure data. Set working directory as downloaded files directory. Install required libraries before running this script
-
-
 PERM data from the Department of Foreign Labor Certification is in XLSX format. We can read and manipulate these using the \texttt{xlsx} and \texttt{dplyr} packages.
-
-%
-% XXX: We need your scripts!
-%
   
 Transforming all character variables to upper case deemed as necessary to avoid duplicity or incorrectness when performing data manipulation.
   
@@ -151,9 +142,6 @@ Most column names from 2008-2014 were the same with minor differences, while 201
 Column names are standardized to the 2016 version for posterity and the assumption that in the short term future, the columns will remain the same. 
 To standardize all columns, we have replaced spaces in column names with underscores and created all column names in upper case.
 The first step in preparing data was to select all the relevant columns and fill empty columns with \texttt{NA}s. 
-
-% I don't understand this:
-% Subsetting these columns within a function is created in order to call the function to create final subset for each year. 
 
 Once we have all the data available for each year, a final version is created with the raw data without standardizing or further cleaning.
 This dataset can be used by anyone looking for this PERM data and can standardize based on their needs.
@@ -173,20 +161,6 @@ Finally, a unique row ID was added to each row.
 
 This cleaned data was saved as an RDS file before moving on to exploratory data analysis.
 
-% NOTE: As of yet, we are only using data at the state level (choropleth maps).
-% \subsection{Geolocation data}
-
-% Another RDS file (PermEmpMapsdat.rds) was created with summarized employer name address, city, state and zip codes order by number or perm applications processed and by their mean salary.
-% This dataset would give us which employer sponsors most employees for permanent full time employment as well as who pays more. 
-% Another use of this dataset is in geocoding. 
-
-% In order to get geocodes for employer address we decided to go with a distinct employer addresses in the order of most common PERM application employer who also pays the highest wages.
-
-% I noticed this approach did not work - After 24 hours, I still got rate limit reached. I had to restart the script.
-% Also, since we know it is a 24 hour limit, why not make it sleep for 24 hours?
-% As we are restricted to 2,500 geocode requests from Google Maps in a 24 hour period, we decided to create a program that continuously runs until the rate limit is encountered, sleeps, and wakes up every hour trying to hit the Google server to look for the addresses.
-
-% This program collects all the addresses and store them in a temporary file and update them again based on their index in a main file. The program is designed to run at multiple locations for different index ranges to collect as much address as possible.
 
 \subsection{Shortcomings}
 
@@ -844,29 +818,27 @@ ggsave(filename = filename,
     
 @
 
-% TODO:
-%\subsection{H-1B vs. PERM}
-
-%ggplot(visas) +
-  %geom_density(aes(log(normalized_wage)), stat="bin", binwidth = .05, fill=rgb(0, 0, 1, 1/4)) +
-  %geom_density(aes(log(normalized_prevailing_wage)), stat="bin", binwidth = 0.05, fill=rgb(1, 0, 0, 1/4))
-
 \section{Conclusion}
 
+We analyzed two data sets, LCA applications for the H-1B program, and PERM applications. We replicated a study done on H-1Bs by the Center for Immigration Studies, and were able to conclude that their analysis was correct, but their focus was too narrow and did not generalize well the the H-1B program as a whole. It also neglected to mention that while prevailing wage claims tend to undershoot the median wage, actual H-1B pay is only slightly below the median on average, and in many cases, well above the median. It should be noted though, that H-1B workers may not receive benefits and other compensation seen by citizens or PERM workers. 
 
-% TODO:
+It is clear that PERM workers receive 15\% higher wages than H-1B workers on average.
 
-%Our results confirmed the findings of Mukhopadhyay and Oxborrow \cite{Greencard}, where it was proven that temporary visa workers earn less than the permanent visa holders in the US.
+To perhaps no one's surprise, the highest paying jobs can be found in the fields of medicine and law, followed by engineering, management, and finance jobs. Education jobs trailed far behind most other fields.
 
-Since H1-B workers are restricted from moving across jobs, mainly because they have already applied for permanent residency with their current employers and cannot switch jobs for fear of being denied and having to start the visa process all over again. Temporary workers see lower wages and in some cases no benefits including healthcare coverage.
+We found the most successful attorneys for processing H-1B LCA forms in each state. The top attorneys by far were Priscilla Muhlenkamp in Washington, D.C. and Oishika Gupta in Chicago, IL.
 
-It is clear that PERM workers, on average, receive higher wages than H-1B workers. 
+We also found that the highest paid graduates tend to come from Carnegie Mellon University. 
 
-% TODO:
-% The highest paying jobs can be found in the fields of (fields here).
+\section{Future Work}
 
-% TODO: Get cost of living?
-% The highest paying and lowest paying states, normalized by cost of living, are (states here).
+We were very ambitious when we started this project. Our end goal was to build a Shiny app that would allow users to filter jobs down to the individual lat-long coordinates and determine where the highest paying jobs are when accounting for cost of living. 
+
+We built a working Shiny app and had collected geographical data for each company in the PERM data set. However, we ran into resource limitations on ShinyApps.io. The dataset is large, and even when removing unnecessary columns, the load time for the application exceeded the memory of the free accounts offered on ShinyApps.io. Aggregating the data reduced the usefulness of the app, making it cumbersome and inflexible.
+
+As a future project, it would be ideal to have a paid host that could accommodate the processing requirements of this data. 
+
+In addition, it would be nice to be able to update this report year-over-year as new data comes out. This should be feasible and take minimal effort as long as the format of the data does not change. 
 
 \pagebreak
 
@@ -898,8 +870,7 @@ It is clear that PERM workers, on average, receive higher wages than H-1B worker
 
   
 \bibitem{MigrationPolicy} 
-  Zong, Jie
-  Batalova, Jeanne 
+  Zong, Jie. Batalova, Jeanne 
   Migration Policy Institute
   \textit{Frequently Requested Statistics on Immigrants and Immigration in the United States}, April 14, 2016
   \href{http://www.migrationpolicy.org/article/frequently-requested-statistics-immigrants-and-immigration-united-states}{http://www.migrationpolicy.org/article/frequently-requested-statistics-immigrants-and-immigration-united-states}
